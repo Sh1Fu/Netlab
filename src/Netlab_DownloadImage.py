@@ -29,7 +29,7 @@ class DownloadImage:
             if product_info != "":
                 self.active_s.cell(row=i, column=current_column).value = str(i) + ".jpg"
                 urlretrieve(
-                    product_info, filename="../Netlab/images/%d.jpg" % i)
+                    product_info, filename="images/%d.jpg" % i)
         self.wb.save("images.xlsx")
 
     def take_image(self, id: str) -> str:
@@ -49,13 +49,13 @@ class DownloadImage:
         '''
         a = files
         for i in range(1, (len(files) // delit) + 1):
-            dir_name = f'../Netlab/images/images-{i}'
+            dir_name = f'images/images-{i}'
             if not exists(dir_name):
                 makedirs(dir_name)
             for j in range(delit):
-                move(f"../Netlab/images/images/{a[j]}", f"{dir_name}")
+                move(f"images/images/{a[j]}", f"{dir_name}")
                 print(f"move {a[j]} into {dir_name}")
-            make_archive(f"images-{i}.zip", 'zip', f'../Netlab/images/images-{i}/')
+            make_archive(f"images-{i}.zip", 'zip', f'images/images-{i}/')
             a = a[delit:]
 
     def images_zip(self) -> None:
@@ -71,4 +71,4 @@ class DownloadImage:
         print(mxDel, len(a))
         self.sort_files(mxDel, a)
 
-        make_archive("images.zip", 'zip', '../Netlab/images/')
+        make_archive("images.zip", 'zip', 'images/')
