@@ -31,7 +31,8 @@ class TakePrice(UpdatePrice):
 
     def prepare_json(self, data: str) -> Any:
         '''
-        Transform response from Netlab to Python dict
+        Transform response from Netlab to Python dict\n
+        ``data`` - response from all Netlab API functions
         '''
         return loads(data[data.find("& {") + 2:])
 
