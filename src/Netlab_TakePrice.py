@@ -3,7 +3,7 @@ from requests import get
 from json import loads
 import xml.etree.ElementTree as ET
 from openpyxl import Workbook
-from Netlab_UpdatePrice import UpdatePrice
+from src.Netlab_UpdatePrice import UpdatePrice
 from tqdm import tqdm
 from time import sleep
 
@@ -74,7 +74,7 @@ class TakePrice(UpdatePrice):
                 try:
                     self.product_take(PRICE_TYPE, products['categoryResponse']['data']['goods'], active_sheet, subcatalog["id"])
                 except BaseException as e:
-                    print('\nError: ' + e + '\n')
+                    print('\nError: ' + str(e) + '\n')
                     wb.save(self.file_name)
             else:
                 continue

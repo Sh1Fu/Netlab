@@ -128,5 +128,6 @@ dmypy.json
 # Pyre type checker
 .pyre/
 
-# Images
+# Images and other files
 images/
+*.xlsx

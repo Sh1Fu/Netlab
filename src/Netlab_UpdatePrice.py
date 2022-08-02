@@ -1,8 +1,6 @@
 from json import load
 from typing import Any
 
-from main import PRICE_TYPE
-
 
 class UpdatePrice:
     def __init__(self, file_name) -> None:

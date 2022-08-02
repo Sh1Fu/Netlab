@@ -6,7 +6,7 @@ from tqdm import tqdm
 from shutil import make_archive, move
 from os import listdir, makedirs
 from os.path import exists
-
+from time import sleep
 # http://services.netlab.ru/rest/catalogsZip/goodsImages/<goodsId>.xml?oauth_token=<token>
 
 
@@ -19,6 +19,8 @@ class DownloadImage:
         '''
         Main active function. Edit xlsx file. Add image's name to "E" column. Download first product's image
         '''
+        if not exists("images/"):
+            makedirs("images/")
         self.wb = load_workbook(filename=self.file_name, read_only=False)
         self.active_s = self.wb.active
         length = self.active_s.max_row
@@ -30,6 +32,7 @@ class DownloadImage:
                 self.active_s.cell(row=i, column=current_column).value = str(i) + ".jpg"
                 urlretrieve(
                     product_info, filename="images/%d.jpg" % i)
+            sleep(0.2)
         self.wb.save("images.xlsx")
 
     def take_image(self, id: str) -> str:
