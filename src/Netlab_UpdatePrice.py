@@ -68,17 +68,16 @@ class UpdatePrice:
         p_info = self.find_count(id, self.diction)
         p_count, p_cat = p_info[1], p_info[0]
         p_cat.reverse()
-        ind, prev_ind = 0, 0
+        ind = 1
         catalog_dict = dict()
         catalog_dict = self.update_list(catalog_dict)
         for i in range(0, data_len):
             if json_data[i]['properties']["удаленный склад"] is not None:
-                if PRICE_TYPE:
+                if PRICE_TYPE == 1:
                     for index, ids in enumerate(p_cat, 1):
                         active_sheet.cell(row=active_sheet_row, column=index).value = self.find_name(catalog_dict['catalogResponse']['data']['category'], ids)
                         ind = index
-                ind += 1
-                prev_ind = ind
+                    ind += 1
                 active_sheet.cell(row=active_sheet_row, column=ind).value = json_data[i]['properties']['id']
                 ind += 1
                 active_sheet.cell(row=active_sheet_row, column=ind).value = json_data[i]['properties']['название']
@@ -87,7 +86,7 @@ class UpdatePrice:
                 ind += 1
                 active_sheet.cell(row=active_sheet_row,column=ind).value = "RUB"
                 active_sheet_row += 1
-                ind = prev_ind
+                ind = 1
             else:
                 continue
 

@@ -1,3 +1,4 @@
+from urllib.error import HTTPError, URLError
 from requests import get
 from urllib.request import urlretrieve
 from openpyxl import load_workbook
@@ -30,9 +31,12 @@ class DownloadImage:
             product_info = self.take_image(self.active_s["A%d" % i].value)
             if product_info != "":
                 self.active_s.cell(row=i, column=current_column).value = str(i) + ".jpg"
-                urlretrieve(
-                    product_info, filename="images/%d.jpg" % i)
-            sleep(0.2)
+                try:
+                    urlretrieve(product_info, filename="images/%d.jpg" % i)
+                    sleep(0.2)
+                except BaseException or URLError or HTTPError:
+                    sleep(120)
+                    continue
         self.wb.save("images.xlsx")
 
     def take_image(self, id: str) -> str:
