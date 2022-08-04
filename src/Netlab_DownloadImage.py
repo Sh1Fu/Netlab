@@ -7,7 +7,9 @@ from tqdm import tqdm
 from shutil import make_archive, move
 from os import listdir, makedirs
 from os.path import exists
-from time import sleep
+from time import sleep, strftime
+import logging
+from fake_useragent import UserAgent
 # http://services.netlab.ru/rest/catalogsZip/goodsImages/<goodsId>.xml?oauth_token=<token>
 
 
@@ -15,6 +17,12 @@ class DownloadImage:
     def __init__(self, token: str, file_name: str) -> None:
         self.token = token
         self.file_name = file_name
+        if not exists("out/"):
+            makedirs("out/")
+        self.LOG_FILE = "out/%s.log" % strftime("%Y%m%d-%H%M")
+        logging.basicConfig(filename=self.LOG_FILE, level=logging.DEBUG,
+                            format='%(asctime)s.%(msecs)03d %(levelname)s %(module)s - %(funcName)s: %(message)s', datefmt='%Y-%m-%d %H:%M:%S')
+        logging.debug("Check requests\n")
 
     def xlsx_work(self) -> None:
         '''
@@ -30,12 +38,19 @@ class DownloadImage:
         for i in tqdm(range(2, length + 1, 1)):
             product_info = self.take_image(self.active_s["A%d" % i].value)
             if product_info != "":
-                self.active_s.cell(row=i, column=current_column).value = str(i) + ".jpg"
+                self.active_s.cell(
+                    row=i, column=current_column).value = str(i) + ".jpg"
                 try:
                     urlretrieve(product_info, filename="images/%d.jpg" % i)
                     sleep(0.2)
-                except BaseException or URLError or HTTPError:
+                except URLError or HTTPError:
+                    logging.exception("Network Error: ")
                     sleep(120)
+                    continue
+                except KeyboardInterrupt:
+                    exit()
+                except IndexError:
+                    logging.exception("IndexError: ")
                     continue
         self.wb.save("images.xlsx")
 
@@ -44,7 +59,13 @@ class DownloadImage:
         API function. Take json with image's urls from Netlab API.
         Return value: image url or blank string
         '''
-        response = get("http://services.netlab.ru/rest/catalogsZip/goodsImages/%s.json?oauth_token=%s" % (id, self.token))
+        headers = {
+            "User-Agent": "%s" % UserAgent().random,
+            'accept': "*/*",
+            'cache-control': "no-cache"
+        }
+        response = get(
+            "http://services.netlab.ru/rest/catalogsZip/goodsImages/%s.json?oauth_token=%s" % (id, self.token), headers=headers)
         data = loads(response.text[response.text.find("& {") + 2:])
         if data['entityListResponse']['data'] != None:
             return data['entityListResponse']['data']['items'][0]['properties']['Url']

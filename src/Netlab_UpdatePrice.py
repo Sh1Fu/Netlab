@@ -37,13 +37,14 @@ class UpdatePrice:
                 while current_dict["parentId"] != cat['catalogResponse']['data']["category"][tmp_index]["id"] and tmp_index < len(cat['catalogResponse']['data']["category"]):
                     tmp_index += 1
             except:
-                print(tmp_index, index, current_dict, cat['catalogResponse']['data']["category"][tmp_index])
+                print(tmp_index, index, current_dict,
+                      cat['catalogResponse']['data']["category"][tmp_index])
                 break
             index = tmp_index
             current_dict = cat['catalogResponse']['data']["category"][index]
             category_ids.append(current_dict["id"])
         return (category_ids, float(current_dict["count"]))
-    
+
     def product_take(self, PRICE_TYPE: int, json_data: dict, active_sheet: Any, id: str) -> None:
         '''
         Main function. Create and modify xlsx price file.\n
@@ -75,16 +76,21 @@ class UpdatePrice:
             if json_data[i]['properties']["удаленный склад"] is not None:
                 if PRICE_TYPE == 1:
                     for index, ids in enumerate(p_cat, 1):
-                        active_sheet.cell(row=active_sheet_row, column=index).value = self.find_name(catalog_dict['catalogResponse']['data']['category'], ids)
+                        active_sheet.cell(row=active_sheet_row, column=index).value = self.find_name(
+                            catalog_dict['catalogResponse']['data']['category'], ids)
                         ind = index
                     ind += 1
-                active_sheet.cell(row=active_sheet_row, column=ind).value = json_data[i]['properties']['id']
+                active_sheet.cell(
+                    row=active_sheet_row, column=ind).value = json_data[i]['properties']['id']
                 ind += 1
-                active_sheet.cell(row=active_sheet_row, column=ind).value = json_data[i]['properties']['название']
+                active_sheet.cell(
+                    row=active_sheet_row, column=ind).value = json_data[i]['properties']['название']
                 ind += 1
-                active_sheet.cell(row=active_sheet_row, column=ind).value = round(json_data[i]['properties']['цена по категории D'] * usd * (1 + p_count), 2)
+                active_sheet.cell(row=active_sheet_row, column=ind).value = round(
+                    json_data[i]['properties']['цена по категории D'] * usd * (1 + p_count), 2)
                 ind += 1
-                active_sheet.cell(row=active_sheet_row,column=ind).value = "RUB"
+                active_sheet.cell(row=active_sheet_row,
+                                  column=ind).value = "RUB"
                 active_sheet_row += 1
                 ind = 1
             else:
@@ -101,7 +107,7 @@ class UpdatePrice:
         active_sheet["E1"].value = "Название"
         active_sheet["F1"].value = "Цена"
         active_sheet["G1"].value = "Val"
-    
+
     def init_default_xlsx(self, active_sheet: Any) -> None:
         '''
         Init columns names in xlsx default file

@@ -131,3 +131,6 @@ dmypy.json
 # Images and other files
 images/
 *.xlsx
+
+# Log file
+out/

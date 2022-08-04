@@ -6,6 +6,7 @@ from src.Netlab_App import App
 from src.Netlab_DownloadImage import DownloadImage
 from os.path import exists
 
+
 class Main(App):
     def __init__(self) -> None:
         super().__init__()
@@ -22,7 +23,7 @@ class Main(App):
             api_token = session.auth_token(creds=creds)[0]
             return (1, api_token)
         except BaseException or HTTPDefaultErrorHandler:
-            print("\nProblmes with auth. Try again\n\n")
+            print("Problmes with auth. Try again\n")
             return (0, None)
 
     def price_update(self, PRICE_TYPE: int, auth_token: str) -> None:
@@ -48,10 +49,10 @@ def main():
     print(Hello.renderText('Netlab price update'))
     res = Main()
     auth = res.login()
-    continue_input =  "y"
+    continue_input = "y"
     while(auth[0] != 1):
-        print("Some error. Check your API credentials.\nContinue?\nType [y]/n\n")
-        continue_input = input()
+        continue_input = input(
+            "AuthError: Check your API credentials.\nContinue? Type [y]/n: ")
         if continue_input == 'y':
             auth = res.login()
         else:
