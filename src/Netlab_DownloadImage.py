@@ -26,7 +26,7 @@ class DownloadImage:
 
     def xlsx_work(self) -> None:
         '''
-        Main active function. Edit xlsx file. Add image's name to "E" column. Download first product's image
+        Main active function. Edit xlsx file. Add image's name to first unused column. Download first product's image
         '''
         if not exists("images/"):
             makedirs("images/")
