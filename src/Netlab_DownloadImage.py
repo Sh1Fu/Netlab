@@ -7,9 +7,12 @@ from tqdm import tqdm
 from shutil import make_archive, move
 from os import listdir, makedirs
 from os.path import exists
-from time import sleep, strftime
+from time import sleep, strftime, time
+from datetime import datetime
 import logging
 from fake_useragent import UserAgent
+from pytz import timezone, utc
+
 # http://services.netlab.ru/rest/catalogsZip/goodsImages/<goodsId>.xml?oauth_token=<token>
 
 
@@ -20,9 +23,20 @@ class DownloadImage:
         if not exists("out/"):
             makedirs("out/")
         self.LOG_FILE = "out/%s.log" % strftime("%Y%m%d-%H%M")
+        self.LOCAL_TIMEZONE = timezone("Europe/Moscow")
         logging.basicConfig(filename=self.LOG_FILE, level=logging.DEBUG,
                             format='%(asctime)s.%(msecs)03d %(levelname)s %(module)s - %(funcName)s: %(message)s', datefmt='%Y-%m-%d %H:%M:%S')
         logging.debug("Check requests\n")
+
+    def check_time(self) -> bool:
+        '''
+        Checks if the current work time falls within the Netlab manager work schedule\n
+        ``Work Time`` --> 09:00 - 18:00
+        '''
+        now = datetime.now(self.LOCAL_TIMEZONE)
+        work_start = now.replace(hour=9, minute=0, second=0, microsecond=0)
+        work_end = now.replace(hour=18, minute=0, second=0, microsecond=0)
+        return True if (work_start <= datetime.now(self.LOCAL_TIMEZONE) <= work_end) else False
 
     def xlsx_work(self) -> None:
         '''
@@ -64,12 +78,18 @@ class DownloadImage:
             'accept': "*/*",
             'cache-control': "no-cache"
         }
-        response = get(
-            "http://services.netlab.ru/rest/catalogsZip/goodsImages/%s.json?oauth_token=%s" % (id, self.token), headers=headers)
-        data = loads(response.text[response.text.find("& {") + 2:])
-        if data['entityListResponse']['data'] != None:
-            return data['entityListResponse']['data']['items'][0]['properties']['Url']
-        return ""
+        if self.check_time():
+            response = get(
+                "http://services.netlab.ru/rest/catalogsZip/goodsImages/%s.json?oauth_token=%s" % (id, self.token), headers=headers)
+            data = loads(response.text[response.text.find("& {") + 2:])
+            if data['entityListResponse']['data'] != None:
+                return data['entityListResponse']['data']['items'][0]['properties']['Url']
+            return ""
+        else:
+            logging.log(
+                "Working time is over, waiting for the next day to start")
+            while not self.check_time():
+                sleep(60)
 
     def sort_files(self, delit: int, files: list) -> None:
         '''
@@ -98,5 +118,4 @@ class DownloadImage:
                 mxDel = i
         print(mxDel, len(a))
         self.sort_files(mxDel, a)
-
         make_archive("images.zip", 'zip', 'images/')
