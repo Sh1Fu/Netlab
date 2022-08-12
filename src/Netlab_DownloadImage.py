@@ -1,5 +1,5 @@
 from urllib.error import HTTPError, URLError
-from requests import get
+from requests import get, Session
 from urllib.request import urlretrieve
 from openpyxl import load_workbook
 from json import loads
@@ -7,23 +7,25 @@ from tqdm import tqdm
 from shutil import make_archive, move
 from os import listdir, makedirs
 from os.path import exists
-from time import sleep, strftime, time
+from time import sleep, strftime
 from datetime import datetime
 import logging
 from fake_useragent import UserAgent
-from pytz import timezone, utc
-
+from pytz import timezone
+import re
+from random import randint
 # http://services.netlab.ru/rest/catalogsZip/goodsImages/<goodsId>.xml?oauth_token=<token>
 
 
 class DownloadImage:
     def __init__(self, token: str, file_name: str) -> None:
+        self.LOG_FILE = "out/%s.log" % strftime("%Y%m%d-%H%M")
+        self.LOCAL_TIMEZONE = timezone("Europe/Moscow")
+        self.PROXY_LIST = list()
         self.token = token
         self.file_name = file_name
         if not exists("out/"):
             makedirs("out/")
-        self.LOG_FILE = "out/%s.log" % strftime("%Y%m%d-%H%M")
-        self.LOCAL_TIMEZONE = timezone("Europe/Moscow")
         logging.basicConfig(filename=self.LOG_FILE, level=logging.DEBUG,
                             format='%(asctime)s.%(msecs)03d %(levelname)s %(module)s - %(funcName)s: %(message)s', datefmt='%Y-%m-%d %H:%M:%S')
         logging.debug("Check requests\n")
@@ -37,6 +39,12 @@ class DownloadImage:
         work_start = now.replace(hour=9, minute=0, second=0, microsecond=0)
         work_end = now.replace(hour=18, minute=0, second=0, microsecond=0)
         return True if (work_start <= datetime.now(self.LOCAL_TIMEZONE) <= work_end) else False
+
+    def scrap_proxy(self) -> list:  
+        session = Session()
+        response = session.get('https://free-proxy-list.net/')
+        regex = re.compile("[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}:[0-9]{1,5}")
+        return re.findall(regex, response.text)
 
     def xlsx_work(self) -> None:
         '''
@@ -73,18 +81,28 @@ class DownloadImage:
         API function. Take json with image's urls from Netlab API.
         Return value: image url or blank string
         '''
+        if len(self.PROXY_LIST) == 0:
+            self.PROXY_LIST = self.scrap_proxy()
+
         headers = {
             "User-Agent": "%s" % UserAgent().random,
             'accept': "*/*",
             'cache-control': "no-cache"
         }
+
         if self.check_time():
-            response = get(
-                "http://services.netlab.ru/rest/catalogsZip/goodsImages/%s.json?oauth_token=%s" % (id, self.token), headers=headers)
-            data = loads(response.text[response.text.find("& {") + 2:])
-            if data['entityListResponse']['data'] != None:
-                return data['entityListResponse']['data']['items'][0]['properties']['Url']
-            return ""
+            proxy_index = randint(0, len(self.PROXY_LIST) - 1)
+            current_proxy  = self.PROXY_LIST[proxy_index]
+            proxy_dict = {"http": current_proxy, "https": current_proxy}
+            try:
+                response = get(
+                    "http://services.netlab.ru/rest/catalogsZip/goodsImages/%s.json?oauth_token=%s" % (id, self.token), headers=headers, proxies=proxy_dict)
+                data = loads(response.text[response.text.find("& {") + 2:])
+                if data['entityListResponse']['data'] != None:
+                    return data['entityListResponse']['data']['items'][0]['properties']['Url']
+                return ""
+            except:
+                logging.log("NetworkError: Problems with proxy %s" % current_proxy)
         else:
             logging.log(
                 "Working time is over, waiting for the next day to start")
