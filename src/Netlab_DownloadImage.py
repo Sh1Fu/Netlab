@@ -27,8 +27,7 @@ class DownloadImage:
         self.msg = ""
         if not exists("out/"):
             makedirs("out/")
-        logging.basicConfig(filename=self.LOG_FILE, level=logging.DEBUG,
-                            format='%(asctime)s.%(msecs)03d %(levelname)s %(module)s - %(funcName)s: %(message)s', datefmt='%Y-%m-%d %H:%M:%S')
+        logging.basicConfig(filename=self.LOG_FILE, level=logging.DEBUG, format='%(asctime)s.%(msecs)03d %(levelname)s %(module)s - %(funcName)s: %(message)s', datefmt='%Y-%m-%d %H:%M:%S')
         logging.debug("Check requests\n")
 
     def check_time(self) -> bool:
@@ -37,7 +36,7 @@ class DownloadImage:
         ``Work Time`` --> 09:00 - 18:00
         '''
         now = datetime.now(self.LOCAL_TIMEZONE)
-        work_start = now.replace(hour=1, minute=0, second=0, microsecond=0) # Change if you need
+        work_start = now.replace(hour=1, minute=0, second=0, microsecond=0)  # Change if you need
         work_end = now.replace(hour=23, minute=0, second=0, microsecond=0)
         return True if (work_start <= datetime.now(self.LOCAL_TIMEZONE) <= work_end) else False
 
@@ -56,12 +55,11 @@ class DownloadImage:
             tmp = BeautifulSoup(str(i), 'html.parser')
             td_tag = tmp.find_all('td')
             if len(td_tag) == 8:
-                proxy_list.append(td_tag[0].get_text() + ":" + td_tag[1].get_text()) if tmp.find_all(
-                    class_="hx")[0].get_text() == "no" and len(proxy_list) < 100 else None
+                proxy_list.append(td_tag[0].get_text() + ":" + td_tag[1].get_text()) if tmp.find_all(class_="hx")[0].get_text() == "no" and len(proxy_list) < 100 else None
         urls = ", ".join('"http://' + proxy + '"' for proxy in proxy_list)
-        payload = "{\"urls\":[%s],\"userAgent\":\"chrome-100\",\"userName\":\"\",\"passWord\":\"\",\"headerName\":\"\",\"headerValue\":\"\",\"strictSSL\":true,\"canonicalDomain\":false,\"additionalSubdomains\":[\"www\"],\"followRedirect\":false,\"throttleRequests\":100,\"escapeCharacters\":false}" % urls
-        test_proxies = post(
-            "https://backend.httpstatus.io/api", json=loads(payload))
+        payload = "{\"urls\":[%s],\"userAgent\":\"chrome-100\",\"userName\":\"\",\"passWord\":\"\",\"headerName\":\"\",\"headerValue\":\"\",\"strictSSL\":true,\"canonicalDomain\":false,\"\
+                    additionalSubdomains\":[\"www\"],\"followRedirect\":false,\"throttleRequests\":100,\"escapeCharacters\":false}" % urls
+        test_proxies = post("https://backend.httpstatus.io/api", json=loads(payload))
         test_data = test_proxies.json()
         for index, bad_proxy in enumerate(test_data, 0):
             if bad_proxy["statusCode"] == 200:
@@ -93,11 +91,10 @@ class DownloadImage:
                 proxy_index = randint(0, len(self.PROXY_LIST) - 1)
                 current_proxy = self.PROXY_LIST[proxy_index]
                 proxy_dict = {"http": current_proxy}
-            product_info = self.take_image(
-                self.active_s["A%d" % i].value, proxy_dict=proxy_dict if proxy_dict else None)  # proxy_dict if proxy_dict else None
+            # proxy_dict if proxy_dict else None
+            product_info = self.take_image(self.active_s["A%d" % i].value, proxy_dict=proxy_dict if proxy_dict else None)
             if product_info != "":
-                self.active_s.cell(
-                    row=i, column=current_column).value = str(i) + ".jpg"
+                self.active_s.cell(row=i, column=current_column).value = str(i) + ".jpg"
                 try:
                     urlretrieve(product_info, filename="images/%d.jpg" % i)
                     sleep(0.2)
@@ -125,13 +122,12 @@ class DownloadImage:
         }
         if not self.check_time():  # Only test. Remove "not" condition in release version
             try:
-                response = get(
-                    "http://services.netlab.ru/rest/catalogsZip/goodsImages/%s.json?oauth_token=%s" % (id, self.token), headers=headers, proxies=proxy_dict)
+                response = get("http://services.netlab.ru/rest/catalogsZip/goodsImages/%s.json?oauth_token=%s" % (id, self.token), headers=headers, proxies=proxy_dict)
                 data = loads(response.text[response.text.find("& {") + 2:])
-                if data['entityListResponse']['data'] != None:
+                if data['entityListResponse']['data'] is not None:
                     return data['entityListResponse']['data']['items'][0]['properties']['Url']
                 return ""
-            except:
+            except HTTPError or BaseException:
                 self.msg = "NetworkError: Problems with proxy %s" % proxy_dict['http']
                 logging.log(msg=self.msg, level=1)
         else:

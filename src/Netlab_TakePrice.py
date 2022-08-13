@@ -41,8 +41,7 @@ class TakePrice(UpdatePrice):
         Return current usd/rub value from CBR api
         '''
         response = get("https://www.cbr.ru/scripts/XML_daily.asp")
-        usd_rate = float(ET.fromstring(response.text).find(
-            "./Valute[CharCode='USD']/Value").text.replace(",", "."))
+        usd_rate = float(ET.fromstring(response.text).find("./Valute[CharCode='USD']/Value").text.replace(",", "."))
         return usd_rate
 
     def parse_time(self, time: str) -> Any:
@@ -52,8 +51,7 @@ class TakePrice(UpdatePrice):
         '''
         API function. Take catalog (json object) from Netlab API. (catalog.json file)
         '''
-        data = get(
-            "http://services.netlab.ru/rest/catalogsZip/Прайс-лист.json?oauth_token=%s" % token)
+        data = get("http://services.netlab.ru/rest/catalogsZip/Прайс-лист.json?oauth_token=%s" % token)
         data_json = self.prepare_json(data.text)
         return data_json
 
@@ -68,16 +66,13 @@ class TakePrice(UpdatePrice):
         catalog_json = self.catalog_names(token)
         wb = Workbook()
         active_sheet = wb.active
-        self.init_default_xlsx(active_sheet=active_sheet) if PRICE_TYPE == 0 else self.init_main_xlsx(
-            active_sheet=active_sheet)
+        self.init_default_xlsx(active_sheet=active_sheet) if PRICE_TYPE == 0 else self.init_main_xlsx(active_sheet=active_sheet)
         for subcatalog in tqdm(catalog_json["catalogResponse"]["data"]["category"]):
             if subcatalog["name"] != "Услуги и Получи!Фонд":
-                products = get(
-                    "http://services.netlab.ru/rest/catalogsZip/Прайс-лист/%s.json?oauth_token=%s" % (subcatalog["id"], token))
+                products = get("http://services.netlab.ru/rest/catalogsZip/Прайс-лист/%s.json?oauth_token=%s" % (subcatalog["id"], token))
                 products = self.prepare_json(products.text)
                 try:
-                    self.product_take(
-                        PRICE_TYPE, products['categoryResponse']['data']['goods'], active_sheet, subcatalog["id"])
+                    self.product_take(PRICE_TYPE, products['categoryResponse']['data']['goods'], active_sheet, subcatalog["id"])
                 except BaseException as e:
                     print('\nError: ' + str(e) + '\n')
                     wb.save(self.file_name)

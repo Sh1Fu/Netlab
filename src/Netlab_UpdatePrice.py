@@ -36,9 +36,8 @@ class UpdatePrice:
             try:
                 while current_dict["parentId"] != cat['catalogResponse']['data']["category"][tmp_index]["id"] and tmp_index < len(cat['catalogResponse']['data']["category"]):
                     tmp_index += 1
-            except:
-                print(tmp_index, index, current_dict,
-                      cat['catalogResponse']['data']["category"][tmp_index])
+            except BaseException:
+                print(tmp_index, index, current_dict, cat['catalogResponse']['data']["category"][tmp_index])
                 break
             index = tmp_index
             current_dict = cat['catalogResponse']['data']["category"][index]
@@ -53,8 +52,8 @@ class UpdatePrice:
         ``active_sheet`` - current openpyxl thread\n
         ``json_data`` - all goods from Netlab subcatalog\n
         Appending fields:\n
-        #### PRICE_TYPE: 1 
-        * "Название категории 1 группы" 
+        #### PRICE_TYPE: 1
+        * "Название категории 1 группы"
         * "Название категории 2 группы"
         * "Название категории 3 группы"\n
         #### PRICE_TYPE: 0 or 1
@@ -76,21 +75,16 @@ class UpdatePrice:
             if json_data[i]['properties']["удаленный склад"] is not None:
                 if PRICE_TYPE == 1:
                     for index, ids in enumerate(p_cat, 1):
-                        active_sheet.cell(row=active_sheet_row, column=index).value = self.find_name(
-                            catalog_dict['catalogResponse']['data']['category'], ids)
+                        active_sheet.cell(row=active_sheet_row, column=index).value = self.find_name(catalog_dict['catalogResponse']['data']['category'], ids)
                         ind = index
                     ind += 1
-                active_sheet.cell(
-                    row=active_sheet_row, column=ind).value = json_data[i]['properties']['id']
+                active_sheet.cell(row=active_sheet_row, column=ind).value = json_data[i]['properties']['id']
                 ind += 1
-                active_sheet.cell(
-                    row=active_sheet_row, column=ind).value = json_data[i]['properties']['название']
+                active_sheet.cell(row=active_sheet_row, column=ind).value = json_data[i]['properties']['название']
                 ind += 1
-                active_sheet.cell(row=active_sheet_row, column=ind).value = round(
-                    json_data[i]['properties']['цена по категории D'] * usd * (1 + p_count), 2)
+                active_sheet.cell(row=active_sheet_row, column=ind).value = round(json_data[i]['properties']['цена по категории D'] * usd * (1 + p_count), 2)
                 ind += 1
-                active_sheet.cell(row=active_sheet_row,
-                                  column=ind).value = "RUB"
+                active_sheet.cell(row=active_sheet_row, column=ind).value = "RUB"
                 active_sheet_row += 1
                 ind = 1
             else:
