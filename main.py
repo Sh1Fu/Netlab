@@ -3,7 +3,6 @@ from urllib.request import HTTPDefaultErrorHandler
 from pyfiglet import Figlet
 from src.Netlab_TakePrice import TakePrice
 from src.Netlab_App import App
-from src.Netlab_DownloadImage import DownloadImage
 from os.path import exists
 
 
@@ -37,6 +36,7 @@ class Main(App):
         '''
         Price and image function
         '''
+        from src.Netlab_DownloadImage import DownloadImage
         if not exists("first.xlsx"):
             self.price_update(PRICE_TYPE, auth_token)
         im = DownloadImage(auth_token, self.PRICE_NAME)
