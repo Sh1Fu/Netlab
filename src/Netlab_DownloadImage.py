@@ -42,23 +42,28 @@ class DownloadImage:
 
     def scrap_proxy(self) -> list:
         '''
-        Take all free proxy servers from free-proxy-list.net
+        Take all free proxy servers from free proxy list
+        Resources:\n
+        * free-proxy-list.net
+        * httpstatus.io
         '''
-        session = Session()
-        proxy_list = list()
-        clean_proxy = list()
-        response = session.get('https://free-proxy-list.net/')
+        proxy_list, clean_proxy = list(), list()
+        response = get('https://free-proxy-list.net/')
         proxy_table = BeautifulSoup(response.text, 'html.parser').find('table')
-        proxy_raw = BeautifulSoup(
-            str(proxy_table), 'html.parser').find_all('tr')
-        for i in proxy_raw:
-            tmp = BeautifulSoup(str(i), 'html.parser')
-            td_tag = tmp.find_all('td')
+        proxy_html_raw = proxy_table.find_all("tr")
+        for proxy_row in proxy_html_raw:
+            td_tag = proxy_row.find_all('td')
             if len(td_tag) == 8:
-                proxy_list.append(td_tag[0].get_text() + ":" + td_tag[1].get_text()) if tmp.find_all(class_="hx")[0].get_text() == "no" and len(proxy_list) < 100 else None
+                proxy_list.append(td_tag[0].get_text() + ":" + td_tag[1].get_text()) if proxy_row.find_all(class_="hx")[0].get_text() == "no" and len(proxy_list) < 100 else None
         urls = ", ".join('"http://' + proxy + '"' for proxy in proxy_list)
-        payload = "{\"urls\":[%s],\"userAgent\":\"chrome-100\",\"userName\":\"\",\"passWord\":\"\",\"headerName\":\"\",\"headerValue\":\"\",\"strictSSL\":true,\"canonicalDomain\":false,\"\
-                    additionalSubdomains\":[\"www\"],\"followRedirect\":false,\"throttleRequests\":100,\"escapeCharacters\":false}" % urls
+        payload = "{\
+                    \"urls\":[%s],\"userAgent\":\"chrome-100\",\
+                    \"userName\":\"\",\"passWord\":\"\",\
+                    \"headerName\":\"\",\"headerValue\":\"\",\
+                    \"strictSSL\":true,\"canonicalDomain\":false,\"\
+                    additionalSubdomains\":[\"www\"],\"followRedirect\":false,\
+                    \"throttleRequests\":100,\"escapeCharacters\":false\
+                    }" % urls
         test_proxies = post("https://backend.httpstatus.io/api", json=loads(payload))
         test_data = test_proxies.json()
         for index, bad_proxy in enumerate(test_data, 0):
@@ -82,23 +87,23 @@ class DownloadImage:
             makedirs("images/")
         self.wb = load_workbook(filename=self.file_name, read_only=False)
         self.active_s = self.wb.active
-        length = self.active_s.max_row
+        sheet_length = self.active_s.max_row
         current_column = self.active_s.max_column + 1
-        mxDel = self.max_del(length)
+        mxDel = self.max_del(sheet_length)
         self.active_s.cell(row=1, column=current_column).value = "Картинка"
-        for i in tqdm(range(2, length + 1, 1)):
+        for i in tqdm(range(2, sheet_length + 1, 1)):
             if i % mxDel == 0:
                 proxy_index = randint(0, len(self.PROXY_LIST) - 1)
                 current_proxy = self.PROXY_LIST[proxy_index]
                 proxy_dict = {"http": current_proxy}
-            # proxy_dict if proxy_dict else None
-            product_info = self.take_image(self.active_s["A%d" % i].value, proxy_dict=proxy_dict if proxy_dict else None)
+            product_info = self.take_image(self.active_s["A%d" % i].value, proxy_dict=proxy_dict)
             if product_info != "":
                 self.active_s.cell(row=i, column=current_column).value = str(i) + ".jpg"
                 try:
                     urlretrieve(product_info, filename="images/%d.jpg" % i)
                     sleep(0.2)
                 except URLError or HTTPError:
+                    self.wb.save("images.xlsx")
                     logging.exception("Network Error: ")
                     sleep(120)
                     continue
@@ -106,8 +111,7 @@ class DownloadImage:
                     exit()
                 except IndexError:
                     logging.exception("IndexError: ")
-                    continue
-        self.wb.save("images.xlsx")
+        self.wb.save("images.xlsx")         
 
     def take_image(self, id: str, proxy_dict: dict) -> str:
         '''
@@ -120,16 +124,17 @@ class DownloadImage:
             'accept': "*/*",
             'cache-control': "no-cache"
         }
-        if not self.check_time():  # Only test. Remove "not" condition in release version
+        if self.check_time():
             try:
                 response = get("http://services.netlab.ru/rest/catalogsZip/goodsImages/%s.json?oauth_token=%s" % (id, self.token), headers=headers, proxies=proxy_dict)
                 data = loads(response.text[response.text.find("& {") + 2:])
                 if data['entityListResponse']['data'] is not None:
                     return data['entityListResponse']['data']['items'][0]['properties']['Url']
                 return ""
-            except HTTPError or BaseException:
-                self.msg = "NetworkError: Problems with proxy %s" % proxy_dict['http']
+            except:
+                self.msg = "NetworkError: Problems with proxy %s" % proxy_dict['http'] if proxy_dict['http'] else "Main Network" 
                 logging.log(msg=self.msg, level=1)
+                return ""
         else:
             self.msg = "Working time is over, waiting for the next day to start"
             logging.log(msg=self.msg, level=1)
@@ -155,7 +160,7 @@ class DownloadImage:
         '''
         Create zip with images to NetLab
         '''
-        a = listdir("../Netlab/images")
+        a = listdir("./images")
         mxDel = self.max_del(len(a))
         self.sort_files(mxDel, a)
         make_archive("images.zip", 'zip', 'images/')
