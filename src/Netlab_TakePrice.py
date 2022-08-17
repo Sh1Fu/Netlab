@@ -6,6 +6,8 @@ from openpyxl import Workbook
 from src.Netlab_UpdatePrice import UpdatePrice
 from tqdm import tqdm
 from time import sleep
+from os.path import exists
+from os import makedirs
 
 
 class TakePrice(UpdatePrice):
@@ -15,6 +17,8 @@ class TakePrice(UpdatePrice):
         self.diction = dict()
         self.current_row = 1
         super().__init__(file_name=self.file_name)
+        if not exists("price_lists/"):
+            makedirs("price_lists/")
 
     def auth_token(self, creds: Any) -> tuple:
         '''
@@ -75,8 +79,10 @@ class TakePrice(UpdatePrice):
                     self.product_take(PRICE_TYPE, products['categoryResponse']['data']['goods'], active_sheet, subcatalog["id"])
                 except BaseException as e:
                     print('\nError: ' + str(e) + '\n')
-                    wb.save(self.file_name)
+                    wb.save(f"./price_lists/{self.file_name}")
             else:
                 continue
             sleep(0.3)
-        wb.save(self.file_name)
+        wb.save(f"./price_lists/{self.file_name}")
+        print("[+] Default price without images in result dir!")
+        

@@ -131,7 +131,7 @@ dmypy.json
 
 # Images and other files
 images/
-*.xlsx
+price_lists/
 
 # Log file
 out/

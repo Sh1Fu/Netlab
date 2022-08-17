@@ -3,6 +3,7 @@ from urllib.error import HTTPError, URLError
 from requests import get, post
 from urllib.request import urlretrieve
 from openpyxl import load_workbook
+from openpyxl.styles import NamedStyle, Font
 from json import loads
 from tqdm import tqdm
 from shutil import make_archive, move
@@ -15,6 +16,7 @@ from fake_useragent import UserAgent
 from pytz import timezone
 from random import randint
 from bs4 import BeautifulSoup
+from csv import writer
 # http://services.netlab.ru/rest/catalogsZip/goodsImages/<goodsId>.xml?oauth_token=<token>
 
 
@@ -23,6 +25,7 @@ class DownloadImage:
         self.LOG_FILE = "out/%s.log" % strftime("%Y%m%d-%H%M")
         self.LOCAL_TIMEZONE = timezone("Europe/Moscow")
         self.PROXY_LIST = self.scrap_proxy() + [None] * 100 # Make requests without proxy
+        self.CSV_NAME = "price update.csv"
         self.token = token
         self.file_name = file_name
         self.msg = ""
@@ -41,6 +44,13 @@ class DownloadImage:
         work_start = now.replace(hour=1, minute=0, second=0, microsecond=0)  # Change if you need
         work_end = now.replace(hour=23, minute=0, second=0, microsecond=0)
         return True if (work_start <= datetime.now(self.LOCAL_TIMEZONE) <= work_end) else False
+    
+    def max_del(self, max_iteration: int) -> int:
+        mxDel = 0
+        for i in range(max_iteration, 1, -1):
+            if max_iteration % i == 0 and i >= mxDel and max_iteration / i > 5:
+                mxDel = i
+                return mxDel  
 
     def scrap_proxy(self) -> list:
         '''
@@ -75,49 +85,6 @@ class DownloadImage:
                 clean_proxy.append(proxy_list[index])
         return clean_proxy
 
-    def max_del(self, max_iteration: int) -> int:
-        mxDel = 0
-        for i in range(max_iteration, 1, -1):
-            if max_iteration % i == 0 and i >= mxDel and max_iteration / i > 5:
-                mxDel = i
-                return mxDel
-
-    def xlsx_work(self) -> None:
-        '''
-        Main active function. Edit xlsx file. Add image's name to first unused column. Download first product's image
-        '''
-        proxy_dict = dict()
-        if not exists("images/"):
-            print("[+] Make images/ dir to Netlab images..")
-            makedirs("images/")
-        self.wb = load_workbook(filename=self.file_name, read_only=False)
-        self.active_s = self.wb.active
-        sheet_length = self.active_s.max_row
-        current_column = self.active_s.max_column + 1
-        mxDel = self.max_del(sheet_length)
-        self.active_s.cell(row=1, column=current_column).value = "Картинка"
-        for i in tqdm(range(2, sheet_length + 1, 1)):
-            if i % mxDel == 0:
-                proxy_index = randint(0, len(self.PROXY_LIST) - 1)
-                current_proxy = self.PROXY_LIST[proxy_index]
-                proxy_dict = {"http": current_proxy}
-            product_info = self.take_image(self.active_s["A%d" % i].value, proxy_dict=proxy_dict)
-            if product_info != "":
-                self.active_s.cell(row=i, column=current_column).value = str(i) + ".jpg"
-                try:
-                    urlretrieve(product_info, filename="images/%d.jpg" % i)
-                    sleep(0.1) # Tmp test
-                except URLError or HTTPError:
-                    self.wb.save("images.xlsx")
-                    logging.exception("Network Error: ")
-                    sleep(120)
-                    continue
-                except KeyboardInterrupt:
-                    exit()
-                except IndexError:
-                    logging.exception("IndexError: ")
-        self.wb.save("images.xlsx")         
-
     def take_image(self, id: str, proxy_dict: dict) -> str:
         '''
         API function. Take json with image's urls from Netlab API.
@@ -145,6 +112,59 @@ class DownloadImage:
             logging.log(msg=self.msg, level=1)
             while not self.check_time():
                 sleep(60)
+    
+    def xlsx_work(self) -> None:
+        '''
+        Main active function. Edit xlsx file. Add image's name to first unused column. Download first product's image
+        '''
+        proxy_dict = dict()
+        if not exists("images/"):
+            print("[+] Make images/ dir to Netlab images..")
+            makedirs("images/")
+        self.wb = load_workbook(filename=f"./price_lists/{self.file_name}", read_only=False)
+        self.active_s = self.wb.active
+        sheet_length = self.active_s.max_row
+        current_column = self.active_s.max_column + 1
+        mxDel = self.max_del(sheet_length)
+        self.active_s.cell(row=1, column=current_column).value = "Картинка"
+        for i in tqdm(range(2, sheet_length + 1, 1)):
+            if i % mxDel == 0:
+                proxy_index = randint(0, len(self.PROXY_LIST) - 1)
+                current_proxy = self.PROXY_LIST[proxy_index]
+                proxy_dict = {"http": current_proxy}
+            product_info = self.take_image(self.active_s["A%d" % i].value, proxy_dict=proxy_dict)
+            if product_info != "":
+                self.active_s.cell(row=i, column=current_column).value = str(i) + ".jpg"
+                try:
+                    urlretrieve(product_info, filename="images/%d.jpg" % i)
+                    sleep(0.1) # Tmp test
+                except URLError or HTTPError:
+                    self.wb.save("images.xlsx")
+                    logging.exception("Network Error: ")
+                    sleep(120)
+                    continue
+                except KeyboardInterrupt:
+                    exit()
+                except IndexError:
+                    logging.exception("IndexError: ")
+        self.wb.save("./price_lists/images.xlsx")   
+        self.csv_save("./price_lists/images.xlsx")
+
+    def csv_save(self, file_name: str) -> None:
+        '''
+        Save new xlsx file as csv file with delimiter = ";"\n
+        Change csv file name in constant ``CSV_NAME``
+        '''
+        self.wb = load_workbook(filename=file_name, read_only=False)
+        self.active_s = self.wb.active
+        style = NamedStyle(name="style")
+        style.font = Font(name="Arial")
+        self.wb.add_named_style(style)
+        with open(self.CSV_NAME, 'w', newline="") as result_file:
+            csv_writer = writer(result_file, delimiter=";", quotechar='"')
+            for row in self.active_s.iter_rows():
+                csv_writer.writerow([cell.value for cell in row])
+        print("[+] Price list with images is ready!")
 
     def sort_files(self, delit: int, files: list) -> None:
         '''

@@ -37,7 +37,7 @@ class Main(App):
         Price and image function
         '''
         from src.Netlab_DownloadImage import DownloadImage
-        if not exists("first.xlsx"):
+        if not exists("./price_lists/first.xlsx"):
             self.price_update(PRICE_TYPE, auth_token)
         im = DownloadImage(auth_token, self.PRICE_NAME)
         im.xlsx_work()
@@ -52,11 +52,11 @@ def main():
     continue_input = "y"
     while(auth[0] != 1):
         continue_input = input(
-            "AuthError: Check your API credentials.\nContinue? Type [y]/n: ")
+            "[!] AuthError: Check your API credentials.\nContinue? Type [y]/n: ")
         if continue_input == 'y':
             auth = res.login()
         else:
-            print("Ok, Have a nice day :<\n")
+            print("[!] Ok, Have a nice day :<\n")
             exit()
     choice = res.main_choice()
     if choice['price'] == "Only default price":
