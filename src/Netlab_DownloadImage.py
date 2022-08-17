@@ -1,22 +1,24 @@
-from ssl import SSLError
-from urllib.error import HTTPError, URLError
-from requests import get, post
-from urllib.request import urlretrieve
-from openpyxl import load_workbook
-from openpyxl.styles import NamedStyle, Font
+import logging
+from csv import writer
+from datetime import datetime
 from json import loads
-from tqdm import tqdm
-from shutil import make_archive, move
 from os import listdir, makedirs
 from os.path import exists
-from time import sleep, strftime
-from datetime import datetime
-import logging
-from fake_useragent import UserAgent
-from pytz import timezone
 from random import randint
+from shutil import make_archive, move
+from ssl import SSLError
+from time import sleep, strftime
+from urllib.error import HTTPError, URLError
+from urllib.request import urlretrieve
+
 from bs4 import BeautifulSoup
-from csv import writer
+from fake_useragent import UserAgent
+from openpyxl import load_workbook
+from openpyxl.styles import Font, NamedStyle
+from pytz import timezone
+from requests import get, post
+from tqdm import tqdm
+
 # http://services.netlab.ru/rest/catalogsZip/goodsImages/<goodsId>.xml?oauth_token=<token>
 
 
@@ -121,25 +123,25 @@ class DownloadImage:
         if not exists("images/"):
             print("[+] Make images/ dir to Netlab images..")
             makedirs("images/")
-        self.wb = load_workbook(filename=f"./price_lists/{self.file_name}", read_only=False)
-        self.active_s = self.wb.active
-        sheet_length = self.active_s.max_row
-        current_column = self.active_s.max_column + 1
+        wb = load_workbook(filename=f"./price_lists/{self.file_name}", read_only=False)
+        active_sh = wb.active
+        sheet_length = active_sh.max_row
+        current_column = active_sh.max_column + 1
         mxDel = self.max_del(sheet_length)
-        self.active_s.cell(row=1, column=current_column).value = "Картинка"
+        active_sh.cell(row=1, column=current_column).value = "Картинка"
         for i in tqdm(range(2, sheet_length + 1, 1)):
             if i % mxDel == 0:
                 proxy_index = randint(0, len(self.PROXY_LIST) - 1)
                 current_proxy = self.PROXY_LIST[proxy_index]
                 proxy_dict = {"http": current_proxy}
-            product_info = self.take_image(self.active_s["A%d" % i].value, proxy_dict=proxy_dict)
+            product_info = self.take_image(active_sh["A%d" % i].value, proxy_dict=proxy_dict)
             if product_info != "":
-                self.active_s.cell(row=i, column=current_column).value = str(i) + ".jpg"
+                active_sh.cell(row=i, column=current_column).value = str(i) + ".jpg"
                 try:
                     urlretrieve(product_info, filename="images/%d.jpg" % i)
                     sleep(0.1) # Tmp test
                 except URLError or HTTPError:
-                    self.wb.save("images.xlsx")
+                    wb.save("images.xlsx")
                     logging.exception("Network Error: ")
                     sleep(120)
                     continue
@@ -147,7 +149,7 @@ class DownloadImage:
                     exit()
                 except IndexError:
                     logging.exception("IndexError: ")
-        self.wb.save("./price_lists/images.xlsx")   
+        wb.save("./price_lists/images.xlsx")   
         self.csv_save("./price_lists/images.xlsx")
 
     def csv_save(self, file_name: str) -> None:
@@ -155,14 +157,14 @@ class DownloadImage:
         Save new xlsx file as csv file with delimiter = ";"\n
         Change csv file name in constant ``CSV_NAME``
         '''
-        self.wb = load_workbook(filename=file_name, read_only=False)
-        self.active_s = self.wb.active
+        wb = load_workbook(filename=file_name, read_only=False)
+        active_sh = wb.active
         style = NamedStyle(name="style")
         style.font = Font(name="Arial")
-        self.wb.add_named_style(style)
+        wb.add_named_style(style)
         with open(self.CSV_NAME, 'w', newline="") as result_file:
             csv_writer = writer(result_file, delimiter=";", quotechar='"')
-            for row in self.active_s.iter_rows():
+            for row in active_sh.iter_rows():
                 csv_writer.writerow([cell.value for cell in row])
         print("[+] Price list with images is ready!")
 

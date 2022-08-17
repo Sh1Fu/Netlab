@@ -1,9 +1,12 @@
 from __future__ import print_function
-from urllib.request import HTTPDefaultErrorHandler
-from pyfiglet import Figlet
-from src.Netlab_TakePrice import TakePrice
-from src.Netlab_App import App
+
 from os.path import exists
+from urllib.request import HTTPDefaultErrorHandler
+
+from pyfiglet import Figlet
+
+from src.Netlab_App import App
+from src.Netlab_TakePrice import TakePrice
 
 
 class Main(App):

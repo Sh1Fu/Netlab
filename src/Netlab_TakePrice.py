@@ -1,13 +1,15 @@
-from typing import Any
-from requests import get
-from json import loads
 import xml.etree.ElementTree as ET
-from openpyxl import Workbook
-from src.Netlab_UpdatePrice import UpdatePrice
-from tqdm import tqdm
-from time import sleep
-from os.path import exists
+from json import loads
 from os import makedirs
+from os.path import exists
+from time import sleep
+from typing import Any
+
+from openpyxl import Workbook
+from requests import get
+from tqdm import tqdm
+
+from src.Netlab_UpdatePrice import UpdatePrice
 
 
 class TakePrice(UpdatePrice):
@@ -85,4 +87,3 @@ class TakePrice(UpdatePrice):
             sleep(0.3)
         wb.save(f"./price_lists/{self.file_name}")
         print("[+] Default price without images in result dir!")
-        
