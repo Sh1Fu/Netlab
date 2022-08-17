@@ -1,5 +1,6 @@
+from ssl import SSLError
 from urllib.error import HTTPError, URLError
-from requests import get, Session, post
+from requests import get, post
 from urllib.request import urlretrieve
 from openpyxl import load_workbook
 from json import loads
@@ -21,11 +22,12 @@ class DownloadImage:
     def __init__(self, token: str, file_name: str) -> None:
         self.LOG_FILE = "out/%s.log" % strftime("%Y%m%d-%H%M")
         self.LOCAL_TIMEZONE = timezone("Europe/Moscow")
-        self.PROXY_LIST = self.scrap_proxy()
+        self.PROXY_LIST = self.scrap_proxy() + [None] * 100 # Make requests without proxy
         self.token = token
         self.file_name = file_name
         self.msg = ""
         if not exists("out/"):
+            print("[+] Make out dir to script logs..")
             makedirs("out/")
         logging.basicConfig(filename=self.LOG_FILE, level=logging.DEBUG, format='%(asctime)s.%(msecs)03d %(levelname)s %(module)s - %(funcName)s: %(message)s', datefmt='%Y-%m-%d %H:%M:%S')
         logging.debug("Check requests\n")
@@ -46,6 +48,8 @@ class DownloadImage:
         Resources:\n
         * free-proxy-list.net
         * httpstatus.io
+
+        Check if response to http proxy has status code 200 and append it to clean_proxy list
         '''
         proxy_list, clean_proxy = list(), list()
         response = get('https://free-proxy-list.net/')
@@ -84,6 +88,7 @@ class DownloadImage:
         '''
         proxy_dict = dict()
         if not exists("images/"):
+            print("[+] Make images/ dir to Netlab images..")
             makedirs("images/")
         self.wb = load_workbook(filename=self.file_name, read_only=False)
         self.active_s = self.wb.active
@@ -101,7 +106,7 @@ class DownloadImage:
                 self.active_s.cell(row=i, column=current_column).value = str(i) + ".jpg"
                 try:
                     urlretrieve(product_info, filename="images/%d.jpg" % i)
-                    sleep(0.2)
+                    sleep(0.1) # Tmp test
                 except URLError or HTTPError:
                     self.wb.save("images.xlsx")
                     logging.exception("Network Error: ")
@@ -127,14 +132,14 @@ class DownloadImage:
         if self.check_time():
             try:
                 response = get("http://services.netlab.ru/rest/catalogsZip/goodsImages/%s.json?oauth_token=%s" % (id, self.token), headers=headers, proxies=proxy_dict)
-                data = loads(response.text[response.text.find("& {") + 2:])
-                if data['entityListResponse']['data'] is not None:
-                    return data['entityListResponse']['data']['items'][0]['properties']['Url']
-                return ""
-            except:
+            except URLError or HTTPError or SSLError:
                 self.msg = "NetworkError: Problems with proxy %s" % proxy_dict['http'] if proxy_dict['http'] else "Main Network" 
                 logging.log(msg=self.msg, level=1)
-                return ""
+                response = get("http://services.netlab.ru/rest/catalogsZip/goodsImages/%s.json?oauth_token=%s" % (id, self.token), headers=headers, proxies=None)
+            data = loads(response.text[response.text.find("& {") + 2:])
+            if data['entityListResponse']['data'] is not None:
+                return data['entityListResponse']['data']['items'][0]['properties']['Url']
+            return ""
         else:
             self.msg = "Working time is over, waiting for the next day to start"
             logging.log(msg=self.msg, level=1)
