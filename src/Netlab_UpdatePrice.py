@@ -5,6 +5,7 @@ from typing import Any
 class UpdatePrice:
     def __init__(self, file_name) -> None:
         self.file_name = file_name
+        self.usd_value = self.usd()
 
     def update_list(self, cat: dict) -> dict:
         '''
@@ -37,7 +38,7 @@ class UpdatePrice:
                 while current_dict["parentId"] != cat['catalogResponse']['data']["category"][tmp_index]["id"] and tmp_index < len(cat['catalogResponse']['data']["category"]):
                     tmp_index += 1
             except BaseException:
-                print(tmp_index, index, current_dict, cat['catalogResponse']['data']["category"][tmp_index])
+                # print(tmp_index, index, current_dict, cat['catalogResponse']['data']["category"][tmp_index])
                 break
             index = tmp_index
             current_dict = cat['catalogResponse']['data']["category"][index]
@@ -62,7 +63,6 @@ class UpdatePrice:
         * Цена
         * Валюта
         '''
-        usd = self.usd()
         data_len = len(json_data)
         active_sheet_row = active_sheet.max_row + 1
         p_info = self.find_count(id, self.diction)
@@ -82,7 +82,7 @@ class UpdatePrice:
                 ind += 1
                 active_sheet.cell(row=active_sheet_row, column=ind).value = json_data[i]['properties']['название']
                 ind += 1
-                active_sheet.cell(row=active_sheet_row, column=ind).value = round(json_data[i]['properties']['цена по категории D'] * usd * (1 + p_count), 2)
+                active_sheet.cell(row=active_sheet_row, column=ind).value = round(json_data[i]['properties']['цена по категории D'] * self.usd_value * (1 + p_count), 2)
                 ind += 1
                 active_sheet.cell(row=active_sheet_row, column=ind).value = "RUB"
                 active_sheet_row += 1
