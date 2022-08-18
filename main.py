@@ -34,20 +34,21 @@ class Main(App):
         except BaseException or HTTPDefaultErrorHandler or api_token == "":
             return (0, None)
 
-    def price_update(self, PRICE_TYPE: int) -> None:
+    def price_update(self, PRICE_TYPE: int, with_images: bool) -> None:
         '''
         Only price function
         '''
         price = TakePrice(self.AUTH_URL, self.PRICE_NAME, self.creds)
         price.take_price(PRICE_TYPE)
-        price.csv_save(f"./price_lists/{self.PRICE_NAME}")
+        price.csv_save(
+            f"./price_lists/{self.PRICE_NAME}") if with_images == 0 else None
 
     def price_with_images(self, PRICE_TYPE: int) -> None:
         '''
         Price and image function
         '''
         if not exists("./price_lists/first.xlsx"):
-            self.price_update(PRICE_TYPE)
+            self.price_update(PRICE_TYPE, 1)
         im = DownloadImage(self.PRICE_NAME, creds=self.creds)
         im.xlsx_work()
         TakePrice(self.AUTH_URL, self.PRICE_NAME, self.creds).csv_save(
@@ -90,7 +91,7 @@ def main():
             auth = res.login()
     choice = res.main_choice()
     if choice['price'] == "Only default price":
-        res.price_update(PRICE_TYPE)
+        res.price_update(PRICE_TYPE, 0)
         res.isp_upload()
     elif choice['price'] == "Default price with images":
         res.price_with_images(PRICE_TYPE)
@@ -98,7 +99,7 @@ def main():
         shutil.rmtree("./images/")
     elif choice['price'] == "Only configuration price":
         PRICE_TYPE = 1
-        res.price_update(PRICE_TYPE)
+        res.price_update(PRICE_TYPE, 0)
     elif choice['price'] == "Delete all previous price files":
         res.clean()
 

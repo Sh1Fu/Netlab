@@ -6,7 +6,7 @@ from os.path import exists
 from random import randint
 from shutil import make_archive, move
 from ssl import SSLError
-from time import sleep, strftime
+from time import sleep, strftime, strptime
 from typing import Any
 from urllib import request
 from urllib.error import HTTPError, URLError
@@ -15,11 +15,9 @@ from urllib.request import urlretrieve
 from bs4 import BeautifulSoup
 from fake_useragent import UserAgent
 from openpyxl import load_workbook
-from pytz import timezone
+from pytz import timezone, UTC
 from requests import get, post
 from tqdm import tqdm
-
-# http://services.netlab.ru/rest/catalogsZip/goodsImages/<goodsId>.xml?oauth_token=<token>
 
 
 class DownloadImage:
@@ -54,8 +52,9 @@ class DownloadImage:
         Response time example:\n
         ``time`` - ``06.04.2017 13:15``
         '''
-        expired_in = datetime.strptime(time, "%d.%m.%y %H:%M")
-        return 1 if datetime.now(self.LOCAL_TIMEZONE) <= expired_in else 0
+        expired_in = strptime(time, "%d.%m.%Y %H:%M")
+        current_time = strptime(strftime("%d.%m.%Y %H:%M"), "%d.%m.%Y %H:%M")
+        return 1 if current_time <= expired_in else 0
 
     def check_time(self) -> bool:
         '''
@@ -63,8 +62,8 @@ class DownloadImage:
         ``Work Time`` --> 09:00 - 18:00
         '''
         now = datetime.now(self.LOCAL_TIMEZONE)
-        work_start = now.replace(hour=1, minute=0, second=0, microsecond=0)
-        work_end = now.replace(hour=1, minute=1, second=0, microsecond=0)
+        work_start = now.replace(hour=0, minute=0, second=0, microsecond=0)
+        work_end = now.replace(hour=23, minute=59, second=59, microsecond=0)
         return True if (work_start <= datetime.now(self.LOCAL_TIMEZONE) <= work_end) else False
 
     def max_del(self, max_iteration: int) -> int:
@@ -123,7 +122,7 @@ class DownloadImage:
         (token, live_time) = self.auth_token()
         if not self.token_is_alive(live_time):
             (token, live_time) = self.auth_token()
-        if not self.check_time():  # Remove "not"
+        if self.check_time():
             try:
                 response = get("http://services.netlab.ru/rest/catalogsZip/goodsImages/%s.json?oauth_token=%s" %
                                (id, token), headers=headers, proxies=proxy_dict)
@@ -144,7 +143,7 @@ class DownloadImage:
         else:
             self.msg = "Working time is over, waiting for the next day to start"
             logging.log(msg=self.msg, level=logging.INFO)
-            while self.check_time():  # Add not
+            while not self.check_time():
                 sleep(60)
         return ""
 
