@@ -5,7 +5,7 @@ from time import strftime
 from typing import Any
 
 
-class TransferError:
+class TransferError(Exception):
     '''
     Specific Error class to logging into file. Checks if my file is uploaded to server
     '''
@@ -94,9 +94,9 @@ class ISPUpload:
             try:
                 ftp_conn.storbinary(f"STOR {image_name}", image_file)
                 if image_name not in ftp_conn.nlst():
-                    logging.exception(msg=TransferError(
-                        image_name), level=logging.ERROR)
+                    msg = TransferError(image_name)
+                    logging.exception(msg=str(msg), level=logging.ERROR)
             except ftplib.all_errors as e:
-                logging.exception(
-                    msg=f"FTPError: {str(e)}", level=logging.ERROR)
+                msg = f"FTPError: {str(e)}"
+                logging.exception(msg=msg, level=logging.ERROR)
             image_file.close()
