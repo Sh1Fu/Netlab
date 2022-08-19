@@ -66,8 +66,8 @@ class ISPUpload:
                     msg = f"Info: old {file_name} has been successfully deleted"
                     logging.log(msg=msg, level=logging.INFO)
                     print
-                price = open(file_name, "rb")
-                self.ftp_info[0].storbinary(price)
+                price = open(f"./price_lists/{file_name}", "rb")
+                self.ftp_info[0].storbinary(f"STOR {file_name}", price)
                 price.close()
                 if file_name in self.ftp_info[0].nlst():
                     if with_images:
@@ -90,9 +90,9 @@ class ISPUpload:
             ftp_conn.mkd("./images/")
         ftp_conn.cwd("./images/")
         for image_name in os.listdir("./images/"):
-            image_file = open(image_name, 'rb')
+            image_file = open(f"./images/{image_name}", 'rb')
             try:
-                ftp_conn.storbinary(image_file)
+                ftp_conn.storbinary(f"STOR {image_name}", image_file)
                 if image_name not in ftp_conn.nlst():
                     logging.exception(msg=TransferError(
                         image_name), level=logging.ERROR)

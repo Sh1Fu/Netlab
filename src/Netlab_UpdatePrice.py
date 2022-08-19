@@ -82,7 +82,7 @@ class UpdatePrice:
                 ind += 1
                 active_sheet.cell(row=active_sheet_row, column=ind).value = json_data[i]['properties']['название']
                 ind += 1
-                active_sheet.cell(row=active_sheet_row, column=ind).value = round(json_data[i]['properties']['цена по категории D'] * self.usd_value * (1 + p_count), 2)
+                active_sheet.cell(row=active_sheet_row, column=ind).value = round(json_data[i]['properties']['цена по категории F'] * self.usd_value * (1 + p_count), 2)
                 ind += 1
                 active_sheet.cell(row=active_sheet_row, column=ind).value = "RUB"
                 active_sheet_row += 1

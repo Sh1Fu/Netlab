@@ -15,7 +15,7 @@ from urllib.request import urlretrieve
 from bs4 import BeautifulSoup
 from fake_useragent import UserAgent
 from openpyxl import load_workbook
-from pytz import timezone, UTC
+from pytz import timezone
 from requests import get, post
 from tqdm import tqdm
 
@@ -25,13 +25,18 @@ class DownloadImage:
         self.LOG_FILE = "./out/%s.log" % strftime("%Y%m%d-%H%M")
         self.LOCAL_TIMEZONE = timezone("Europe/Moscow")
         self.AUTH_URL = "http://services.netlab.ru/rest/authentication/token.json?"
-        self.PROXY_LIST = self.scrap_proxy() + [None] * 100
+        # self.PROXY_LIST = self.scrap_proxy() + [None] * 100
+        self.PROXY_LIST = [None] * 100
         self.file_name = file_name
         self.msg = ""
         self.creds = creds
-        logging.basicConfig(filename=self.LOG_FILE, level=logging.DEBUG,
+        (self.token, self.live_time) = self.auth_token()
+        if not exists("./images/"):
+            print("[+] Make images/ dir to Netlab images..")
+            makedirs("./images/")
+        logging.basicConfig(filename=self.LOG_FILE, level=logging.INFO,
                             format='%(asctime)s.%(msecs)03d %(levelname)s %(module)s - %(funcName)s: %(message)s', datefmt='%Y-%m-%d %H:%M:%S')
-        logging.debug("[+] Check requests with images..\n")
+        logging.info("[+] Check requests with images..\n")
 
     def auth_token(self) -> tuple:
         '''
@@ -119,24 +124,24 @@ class DownloadImage:
             'accept': "*/*",
             'cache-control': "no-cache"
         }
-        (token, live_time) = self.auth_token()
-        if not self.token_is_alive(live_time):
-            (token, live_time) = self.auth_token()
+        data = None
+        if not self.token_is_alive(self.live_time):
+            (self.token, self.live_time) = self.auth_token()
         if self.check_time():
             try:
                 response = get("http://services.netlab.ru/rest/catalogsZip/goodsImages/%s.json?oauth_token=%s" %
-                               (id, token), headers=headers, proxies=proxy_dict)
+                               (id, self.token), headers=headers, proxies=proxy_dict)
             except HTTPError or SSLError:
-                sleep(10)
-                self.msg = "NetworkError: Problems with proxy %s" % proxy_dict[
-                    'http'] if proxy_dict['http'] else "Main Network"
+                self.msg = "NetworkError: Problems with proxy % on XML_ID %s" % (
+                    proxy_dict['http'] if proxy_dict['http'] else "Main Network", id)
                 logging.log(msg=self.msg, level=logging.ERROR)
+                sleep(5)
                 response = get("http://services.netlab.ru/rest/catalogsZip/goodsImages/%s.json?oauth_token=%s" %
-                               (id, token), headers=headers, proxies=None)
+                               (id, self.token), headers=headers, proxies=None)
             try:
                 data = loads(response.text[response.text.find("& {") + 2:])
             except JSONDecodeError:
-                self.msg = f"JSONDecodeError: Problems with response {data}"
+                self.msg = f"JSONDecodeError: Problems with response {data} on the XML_ID {id}"
                 logging.log(msg=self.msg, level=logging.ERROR)
             if data['entityListResponse']['data'] is not None:
                 return data['entityListResponse']['data']['items'][0]['properties']['Url']
@@ -152,9 +157,6 @@ class DownloadImage:
         Main active function. Edit xlsx file. Add image's name to first unused column. Download first product's image
         '''
         proxy_dict = dict()
-        if not exists("./images/"):
-            print("[+] Make images/ dir to Netlab images..")
-            makedirs("./images/")
         wb = load_workbook(
             filename=f"./price_lists/{self.file_name}", read_only=False)
         active_sh = wb.active
@@ -174,16 +176,12 @@ class DownloadImage:
                     row=i, column=current_column).value = str(i) + ".jpg"
                 try:
                     urlretrieve(product_info, filename="./images/%d.jpg" % i)
-                    sleep(0.2)  # Tmp test
+                    sleep(0.2)
                 except URLError or HTTPError or request.exceptions.ConnectionError:
                     wb.save("./price_lists/images.xlsx")
-                    logging.exception("Network Error: ")
-                    sleep(120)
+                    logging.exception(f"Network Error on the row {i}: ")
+                    sleep(30)
                     continue
-                except KeyboardInterrupt:
-                    exit()
-                except IndexError:
-                    logging.exception("IndexError: ")
         wb.save("./price_lists/images.xlsx")
 
     def sort_files(self, delit: int, files: list) -> None:

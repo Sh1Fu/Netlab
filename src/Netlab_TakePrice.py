@@ -31,9 +31,9 @@ class TakePrice(UpdatePrice):
         if not exists("./out/"):
             print("[+] Make out dir to script logs..")
             makedirs("./out/")
-        logging.basicConfig(filename=self.LOG_FILE, level=logging.DEBUG,
+        logging.basicConfig(filename=self.LOG_FILE, level=logging.INFO,
                             format='%(asctime)s.%(msecs)03d %(levelname)s %(module)s - %(funcName)s: %(message)s', datefmt='%Y-%m-%d %H:%M:%S')
-        logging.debug("Check requests\n")
+        logging.info("Check requests\n")
 
     def auth_token(self, creds: Any) -> tuple:
         '''

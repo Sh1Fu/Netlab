@@ -47,12 +47,16 @@ class Main(App):
         '''
         Price and image function
         '''
+        if exists("./price_lists/price_update_tmp.csv") and exists("./images/"):
+            self.isp_upload(1)
+            return None
         if not exists("./price_lists/first.xlsx"):
             self.price_update(PRICE_TYPE, 1)
         im = DownloadImage(self.PRICE_NAME, creds=self.creds)
         im.xlsx_work()
         TakePrice(self.AUTH_URL, self.PRICE_NAME, self.creds).csv_save(
             f"./price_lists/{self.IMAGES_PRICE}")
+        self.isp_upload(1)
 
     def isp_upload(self, is_image: bool) -> None:
         '''
@@ -60,7 +64,7 @@ class Main(App):
         '''
         isp_session = ISPUpload()
         isp_session.upload_price(
-            f"./price_lists/price_update_tmp.csv", is_image)
+            "price_update_tmp.csv", is_image)
 
     def clean(self) -> None:
         '''
@@ -92,10 +96,9 @@ def main():
     choice = res.main_choice()
     if choice['price'] == "Only default price":
         res.price_update(PRICE_TYPE, 0)
-        res.isp_upload()
+        res.isp_upload(0)
     elif choice['price'] == "Default price with images":
         res.price_with_images(PRICE_TYPE)
-        res.isp_upload()
         shutil.rmtree("./images/")
     elif choice['price'] == "Only configuration price":
         PRICE_TYPE = 1
