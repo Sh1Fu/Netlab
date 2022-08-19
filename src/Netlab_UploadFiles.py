@@ -43,13 +43,11 @@ class ISPUpload:
             ftp_session.voidcmd("NOOP")
             return (ftp_session, 1)
         except IOError as e:
-            logging.exception(msg=f"IOError: {str(e)}", level=logging.ERROR)
+            logging.exception(msg=f"IOError: {str(e)}")
         except ftplib.error_perm:
-            logging.exception(
-                msg="(HTTP 500-599 Error on FTP server)", level=logging.ERROR)
+            logging.exception(msg="(HTTP 500-599 Error on FTP server)")
         except ftplib.error_temp:
-            logging.exception(
-                msg="(HTTP 400-499) Error on FTP server", level=logging.ERROR)
+            logging.exception(msg="(HTTP 400-499) Error on FTP server")
         return(None, 0)
 
     def upload_price(self, file_name: str, with_images: bool) -> None:
@@ -78,8 +76,7 @@ class ISPUpload:
                 else:
                     raise TransferError(file_name=file_name)
         except ftplib.error_reply:
-            logging.exception(
-                msg="Unexpected reply from server", level=logging.ERROR)
+            logging.exception(msg="Unexpected reply from server")
 
     def images_upload(self, ftp_conn: Any) -> None:
         '''
@@ -94,9 +91,7 @@ class ISPUpload:
             try:
                 ftp_conn.storbinary(f"STOR {image_name}", image_file)
                 if image_name not in ftp_conn.nlst():
-                    msg = TransferError(image_name)
-                    logging.exception(msg=str(msg), level=logging.ERROR)
+                    logging.exception(msg=TransferError(image_name))
             except ftplib.all_errors as e:
-                msg = f"FTPError: {str(e)}"
-                logging.exception(msg=msg, level=logging.ERROR)
+                logging.exception(f"FTPError: {str(e)}")
             image_file.close()

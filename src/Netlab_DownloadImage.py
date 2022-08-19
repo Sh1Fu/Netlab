@@ -169,13 +169,14 @@ class DownloadImage:
                 proxy_index = randint(0, len(self.PROXY_LIST) - 1)
                 current_proxy = self.PROXY_LIST[proxy_index]
                 proxy_dict = {"http": current_proxy}
+            XML_ID = active_sh["A%d" % i].value
             product_info = self.take_image(
-                active_sh["A%d" % i].value, proxy_dict=proxy_dict)
+                XML_ID, proxy_dict=proxy_dict)
             if product_info != "":
                 active_sh.cell(
-                    row=i, column=current_column).value = str(i) + ".jpg"
+                    row=i, column=current_column).value = str(XML_ID) + ".jpg"
                 try:
-                    urlretrieve(product_info, filename="./images/%d.jpg" % i)
+                    urlretrieve(product_info, filename="./images/%s.jpg" % XML_ID)
                     sleep(0.2)
                 except URLError or HTTPError or request.exceptions.ConnectionError:
                     wb.save("./price_lists/images.xlsx")
