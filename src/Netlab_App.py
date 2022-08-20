@@ -23,7 +23,7 @@ class App:
 
     def main_choice(self):
         '''
-        Selecting the desired function 
+        Selecting the desired function
         '''
         choice = [{
             'type': 'list',
@@ -41,6 +41,9 @@ class App:
                 {
                     'name': 'Default price with images',
 
+                },
+                {
+                    'name': 'Delete all previous price files',
                 }
             ],
             'validate': lambda answer: 'You must choose at least one topping.'

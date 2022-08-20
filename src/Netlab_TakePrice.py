@@ -1,11 +1,14 @@
 import xml.etree.ElementTree as ET
+import logging
 from json import loads
 from os import makedirs
 from os.path import exists
-from time import sleep
+from time import sleep, strftime
 from typing import Any
+from csv import writer
 
-from openpyxl import Workbook
+from openpyxl import Workbook, load_workbook
+from openpyxl.styles import NamedStyle, Font
 from requests import get
 from tqdm import tqdm
 
@@ -13,14 +16,24 @@ from src.Netlab_UpdatePrice import UpdatePrice
 
 
 class TakePrice(UpdatePrice):
-    def __init__(self, auth_url: str, file_name: str) -> None:
+    def __init__(self, auth_url: str, file_name: str, creds: Any) -> None:
+        self.LOG_FILE = "./out/%s.log" % strftime("%Y%m%d-%H%M")
+        self.CSV_NAME = "price_update_tmp.csv"
         self.auth_url = auth_url
         self.file_name = file_name
         self.diction = dict()
         self.current_row = 1
+        self.creds = creds
+        self.token = None
         super().__init__(file_name=self.file_name)
-        if not exists("price_lists/"):
-            makedirs("price_lists/")
+        if not exists("./price_lists/"):
+            makedirs("./price_lists/")
+        if not exists("./out/"):
+            print("[+] Make out dir to script logs..")
+            makedirs("./out/")
+        logging.basicConfig(filename=self.LOG_FILE, level=logging.INFO,
+                            format='%(asctime)s.%(msecs)03d %(levelname)s %(module)s - %(funcName)s: %(message)s', datefmt='%Y-%m-%d %H:%M:%S')
+        logging.info("Check requests\n")
 
     def auth_token(self, creds: Any) -> tuple:
         '''
@@ -47,43 +60,62 @@ class TakePrice(UpdatePrice):
         Return current usd/rub value from CBR api
         '''
         response = get("https://www.cbr.ru/scripts/XML_daily.asp")
-        usd_rate = float(ET.fromstring(response.text).find("./Valute[CharCode='USD']/Value").text.replace(",", "."))
+        usd_rate = float(ET.fromstring(response.text).find(
+            "./Valute[CharCode='USD']/Value").text.replace(",", "."))
         return usd_rate
-
-    def parse_time(self, time: str) -> Any:
-        pass
 
     def catalog_names(self, token) -> Any:
         '''
         API function. Take catalog (json object) from Netlab API. (catalog.json file)
         '''
-        data = get("http://services.netlab.ru/rest/catalogsZip/Прайс-лист.json?oauth_token=%s" % token)
+        data = get(
+            "http://services.netlab.ru/rest/catalogsZip/Прайс-лист.json?oauth_token=%s" % token)
         data_json = self.prepare_json(data.text)
         return data_json
 
     def find_name(self, json_object: list, id: str) -> str:
         return [obj for obj in json_object if obj['id'] == id][0]['name']
 
-    def take_price(self, PRICE_TYPE: int, token: str) -> None:
+    def take_price(self, PRICE_TYPE: int) -> None:
         '''
         API function. Take all products from category.
         '''
+        self.token = self.auth_token(creds=self.creds)[0]
         self.diction = self.update_list(self.diction)
-        catalog_json = self.catalog_names(token)
+        catalog_json = self.catalog_names(self.token)
         wb = Workbook()
         active_sheet = wb.active
-        self.init_default_xlsx(active_sheet=active_sheet) if PRICE_TYPE == 0 else self.init_main_xlsx(active_sheet=active_sheet)
+        self.init_default_xlsx(active_sheet=active_sheet) if PRICE_TYPE == 0 else self.init_main_xlsx(
+            active_sheet=active_sheet)
         for subcatalog in tqdm(catalog_json["catalogResponse"]["data"]["category"]):
             if subcatalog["name"] != "Услуги и Получи!Фонд":
-                products = get("http://services.netlab.ru/rest/catalogsZip/Прайс-лист/%s.json?oauth_token=%s" % (subcatalog["id"], token))
+                products = get(
+                    "http://services.netlab.ru/rest/catalogsZip/Прайс-лист/%s.json?oauth_token=%s" % (subcatalog["id"], self.token))
                 products = self.prepare_json(products.text)
                 try:
-                    self.product_take(PRICE_TYPE, products['categoryResponse']['data']['goods'], active_sheet, subcatalog["id"])
+                    self.product_take(
+                        PRICE_TYPE, products['categoryResponse']['data']['goods'], active_sheet, subcatalog["id"])
                 except BaseException as e:
-                    print('\nError: ' + str(e) + '\n')
-                    wb.save(f"./price_lists/{self.file_name}")
+                    logging.log(msg=f'Error: {str(e)}', level=logging.ERROR)
+                    # wb.save(f"./price_lists/{self.file_name}")
             else:
                 continue
-            sleep(0.3)
+            sleep(0.2)
         wb.save(f"./price_lists/{self.file_name}")
         print("[+] Default price without images in result dir!")
+
+    def csv_save(self, file_name: str) -> None:
+        '''
+        Save new xlsx file as csv file with delimiter = ";"\n
+        Change csv file name in constant ``CSV_NAME``
+        '''
+        wb = load_workbook(filename=file_name, read_only=False)
+        active_sh = wb.active
+        style = NamedStyle(name="style")
+        style.font = Font(name="Arial")
+        wb.add_named_style(style)
+        with open(f"./price_lists/{self.CSV_NAME}", 'w', newline="") as result_file:
+            csv_writer = writer(result_file, delimiter=";", quotechar='"')
+            for row in active_sh.iter_rows():
+                csv_writer.writerow([cell.value for cell in row])
+        print("[+] Price list with images is ready!")
