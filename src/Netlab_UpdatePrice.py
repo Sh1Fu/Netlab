@@ -1,11 +1,22 @@
 from json import load
 from typing import Any
+from requests import get
+import xml.etree.ElementTree as ET
 
 
 class UpdatePrice:
     def __init__(self, file_name) -> None:
         self.file_name = file_name
         self.usd_value = self.usd()
+
+    def usd(self) -> float:
+        '''
+        Return current usd/rub value from CBR api
+        '''
+        response = get("https://www.cbr.ru/scripts/XML_daily.asp")
+        usd_rate = float(ET.fromstring(response.text).find(
+            "./Valute[CharCode='USD']/Value").text.replace(",", "."))
+        return usd_rate
 
     def update_list(self, cat: dict) -> dict:
         '''
@@ -38,12 +49,19 @@ class UpdatePrice:
                 while current_dict["parentId"] != cat['catalogResponse']['data']["category"][tmp_index]["id"] and tmp_index < len(cat['catalogResponse']['data']["category"]):
                     tmp_index += 1
             except BaseException:
-                # print(tmp_index, index, current_dict, cat['catalogResponse']['data']["category"][tmp_index])
+                print(tmp_index, index, current_dict,
+                      cat['catalogResponse']['data']["category"][tmp_index])
                 break
             index = tmp_index
             current_dict = cat['catalogResponse']['data']["category"][index]
             category_ids.append(current_dict["id"])
-        return (category_ids, float(current_dict["count"]))
+        with open("count.json", "r") as price_count_file:
+            price_count_json = load(price_count_file)
+            for count in price_count_json['main']:
+                if(count['id'] == current_dict['id']):
+                    return (category_ids, float(count["count"]))
+        print("Not Found")
+        return (category_ids, 1)
 
     def product_take(self, PRICE_TYPE: int, json_data: dict, active_sheet: Any, id: str) -> None:
         '''
@@ -75,16 +93,21 @@ class UpdatePrice:
             if json_data[i]['properties']["удаленный склад"] is not None:
                 if PRICE_TYPE == 1:
                     for index, ids in enumerate(p_cat, 1):
-                        active_sheet.cell(row=active_sheet_row, column=index).value = self.find_name(catalog_dict['catalogResponse']['data']['category'], ids)
+                        active_sheet.cell(row=active_sheet_row, column=index).value = self.find_name(
+                            catalog_dict['catalogResponse']['data']['category'], ids)
                         ind = index
                     ind += 1
-                active_sheet.cell(row=active_sheet_row, column=ind).value = json_data[i]['properties']['id']
+                active_sheet.cell(
+                    row=active_sheet_row, column=ind).value = json_data[i]['properties']['id']
                 ind += 1
-                active_sheet.cell(row=active_sheet_row, column=ind).value = json_data[i]['properties']['название']
+                active_sheet.cell(
+                    row=active_sheet_row, column=ind).value = json_data[i]['properties']['название']
                 ind += 1
-                active_sheet.cell(row=active_sheet_row, column=ind).value = round(json_data[i]['properties']['цена по категории F'] * self.usd_value * (1 + p_count), 2)
+                active_sheet.cell(row=active_sheet_row, column=ind).value = round(
+                    json_data[i]['properties']['цена по категории F'] * self.usd_value * (1 + p_count), 2)
                 ind += 1
-                active_sheet.cell(row=active_sheet_row, column=ind).value = "RUB"
+                active_sheet.cell(row=active_sheet_row,
+                                  column=ind).value = "RUB"
                 active_sheet_row += 1
                 ind = 1
             else:

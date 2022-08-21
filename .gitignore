@@ -135,3 +135,6 @@ price_lists/
 
 # Log file
 out/
+
+# catalog
+catalog.json

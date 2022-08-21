@@ -176,7 +176,8 @@ class DownloadImage:
                 active_sh.cell(
                     row=i, column=current_column).value = str(XML_ID) + ".jpg"
                 try:
-                    urlretrieve(product_info, filename="./images/%s.jpg" % XML_ID)
+                    urlretrieve(
+                        product_info, filename="./images/%s.jpg" % XML_ID)
                     sleep(0.2)
                 except URLError or HTTPError or request.exceptions.ConnectionError:
                     wb.save("./price_lists/images.xlsx")

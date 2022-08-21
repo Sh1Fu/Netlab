@@ -1,14 +1,13 @@
-import xml.etree.ElementTree as ET
 import logging
-from json import loads
+from csv import writer
+from json import dump, loads
 from os import makedirs
 from os.path import exists
 from time import sleep, strftime
 from typing import Any
-from csv import writer
 
 from openpyxl import Workbook, load_workbook
-from openpyxl.styles import NamedStyle, Font
+from openpyxl.styles import Font, NamedStyle
 from requests import get
 from tqdm import tqdm
 
@@ -55,15 +54,6 @@ class TakePrice(UpdatePrice):
         '''
         return loads(data[data.find("& {") + 2:])
 
-    def usd(self) -> float:
-        '''
-        Return current usd/rub value from CBR api
-        '''
-        response = get("https://www.cbr.ru/scripts/XML_daily.asp")
-        usd_rate = float(ET.fromstring(response.text).find(
-            "./Valute[CharCode='USD']/Value").text.replace(",", "."))
-        return usd_rate
-
     def catalog_names(self, token) -> Any:
         '''
         API function. Take catalog (json object) from Netlab API. (catalog.json file)
@@ -81,8 +71,10 @@ class TakePrice(UpdatePrice):
         API function. Take all products from category.
         '''
         self.token = self.auth_token(creds=self.creds)[0]
-        self.diction = self.update_list(self.diction)
         catalog_json = self.catalog_names(self.token)
+        with open("catalog.json", "w+") as catalog_file:
+            dump(catalog_json, catalog_file)
+        self.diction = self.update_list(self.diction)
         wb = Workbook()
         active_sheet = wb.active
         self.init_default_xlsx(active_sheet=active_sheet) if PRICE_TYPE == 0 else self.init_main_xlsx(

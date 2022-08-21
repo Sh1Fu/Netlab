@@ -1,0 +1,212 @@
+{
+    "main": [
+        {
+            "id": "1",
+            "name": "Компьютеры, Ноутбуки, Планшеты",
+            "parentId": "0",
+            "leaf": false,
+            "goods": null,
+            "count": 0.12
+        },
+        {
+            "id": "2",
+            "name": "Комплектующие",
+            "parentId": "0",
+            "leaf": false,
+            "goods": null,
+            "count": 0.15
+        },
+        {
+            "id": "3",
+            "name": "Web-камеры, Колонки, Наушники, Микрофоны",
+            "parentId": "0",
+            "leaf": false,
+            "goods": null,
+            "count": 0.30
+        },
+        {
+            "id": "4",
+            "name": "Аксессуары",
+            "parentId": "0",
+            "leaf": false,
+            "goods": null,
+            "count": 0.50
+        },
+        {
+            "id": "5",
+            "name": "Периферия, Офисное оборудование, UPS",
+            "parentId": "0",
+            "leaf": false,
+            "goods": null,
+            "count": 0.17
+        },
+        {
+            "id": "6",
+            "name": "Сетевое оборудование, модемы",
+            "parentId": "0",
+            "leaf": false,
+            "goods": null,
+            "count": 0.21
+        },
+        {
+            "id": "9",
+            "name": "Серверы и Системы хранения данных",
+            "parentId": "0",
+            "leaf": false,
+            "goods": null,
+            "count": 0.21
+        },
+        {
+            "id": "10",
+            "name": "Фото, Видео, Телевизоры, Электроника",
+            "parentId": "0",
+            "leaf": false,
+            "goods": null,
+            "count": 0.17
+        },
+        {
+            "id": "11",
+            "name": "Программное обеспечение",
+            "parentId": "0",
+            "leaf": false,
+            "goods": null,
+            "count": 0.15
+        },
+        {
+            "id": "12",
+            "name": "Носители информации",
+            "parentId": "0",
+            "leaf": false,
+            "goods": null,
+            "count": 0.25
+        },
+        {
+            "id": "13",
+            "name": "Расходные материалы",
+            "parentId": "0",
+            "leaf": false,
+            "goods": null,
+            "count": 0.4
+        },
+        {
+            "id": "14",
+            "name": "Клавиатуры, Манипуляторы",
+            "parentId": "0",
+            "leaf": false,
+            "goods": null,
+            "count": 0.4
+        },
+        {
+            "id": "15",
+            "name": "Услуги и Получи!Фонд",
+            "parentId": "0",
+            "leaf": false,
+            "goods": null,
+            "count": 0.0
+        },
+        {
+            "id": "16",
+            "name": "Мелкая бытовая техника",
+            "parentId": "0",
+            "leaf": false,
+            "goods": null,
+            "count": 0.25
+        },
+        {
+            "id": "17",
+            "name": "Портативная электроника",
+            "parentId": "0",
+            "leaf": false,
+            "goods": null,
+            "count": 0.14
+        },
+        {
+            "id": "18",
+            "name": "Электроинструмент",
+            "parentId": "0",
+            "leaf": false,
+            "goods": null,
+            "count": 0.3
+        },
+        {
+            "id": "19",
+            "name": "Ручной инструмент",
+            "parentId": "0",
+            "leaf": false,
+            "goods": null,
+            "count": 0.3
+        },
+        {
+            "id": "20",
+            "name": "Бензоинструмент, Садовый Инструмент, Садовая техника",
+            "parentId": "0",
+            "leaf": false,
+            "goods": null,
+            "count": 0.3
+        },
+        {
+            "id": "21",
+            "name": "Электрооборудование",
+            "parentId": "0",
+            "leaf": false,
+            "goods": null,
+            "count": 0.3
+        },
+        {
+            "id": "23",
+            "name": "Офисная мебель, сейфы, шкафы",
+            "parentId": "0",
+            "leaf": false,
+            "goods": null,
+            "count": 0.3
+        },
+        {
+            "id": "24",
+            "name": "Оснастка и расходные материалы для электро-бензоинструмента",
+            "parentId": "0",
+            "leaf": false,
+            "goods": null,
+            "count": 0.3
+        },
+        {
+            "id": "25",
+            "name": "Системы безопасности и видеонаблюдения",
+            "parentId": "0",
+            "leaf": false,
+            "goods": null,
+            "count": 0.15
+        },
+        {
+            "id": "26",
+            "name": "Силовая техника",
+            "parentId": "0",
+            "leaf": false,
+            "goods": null,
+            "count": 0.3
+        },
+        {
+            "id": "27",
+            "name": "Кабельно-проводниковая продукция, Материалы, Крепеж",
+            "parentId": "0",
+            "leaf": false,
+            "goods": null,
+            "count": 0.3
+        },
+        {
+            "id": "28",
+            "name": "Светотехника, Лампы, Батарейки, Аккумуляторы",
+            "parentId": "0",
+            "leaf": false,
+            "goods": null,
+            "count": 0.3
+        },
+        {
+            "id": "29",
+            "name": "Электроустановочные изделия",
+            "parentId": "0",
+            "leaf": false,
+            "goods": null,
+            "count": 0.3
+        }
+    ]
+}

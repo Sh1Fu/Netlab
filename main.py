@@ -1,16 +1,16 @@
 from __future__ import print_function
 
 import shutil
-from os.path import exists
 from os import remove
+from os.path import exists
 from urllib.request import HTTPDefaultErrorHandler
 
 from pyfiglet import Figlet
 
 from src.Netlab_App import App
+from src.Netlab_DownloadImage import DownloadImage
 from src.Netlab_TakePrice import TakePrice
 from src.Netlab_UploadFiles import ISPUpload
-from src.Netlab_DownloadImage import DownloadImage
 
 
 class Main(App):
@@ -96,7 +96,7 @@ def main():
     choice = res.main_choice()
     if choice['price'] == "Only default price":
         res.price_update(PRICE_TYPE, 0)
-        res.isp_upload(0)
+        # res.isp_upload(0)
     elif choice['price'] == "Default price with images":
         res.price_with_images(PRICE_TYPE)
         shutil.rmtree("./images/")

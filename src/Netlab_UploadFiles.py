@@ -1,9 +1,9 @@
-import os
 import ftplib
 import logging
+import os
+from threading import Thread
 from time import strftime
 from typing import Any
-from threading import Thread
 
 
 class TransferError(Exception):
@@ -52,9 +52,9 @@ class ISPUpload:
         return(None, 0)
 
     def max_del(self, max_iteration: int) -> int:
-        mxDel = 0
+        mxDel = 1
         for i in range(max_iteration, 1, -1):
-            if max_iteration % i == 0 and i >= mxDel and (max_iteration / i > 5 and max_iteration / i < 8):
+            if max_iteration % i == 0 and i >= mxDel and max_iteration / i < 8:
                 mxDel = i
                 return mxDel
 
@@ -64,13 +64,13 @@ class ISPUpload:
         ``count`` - count of uploading files\n
         ``ftp_conn`` - new ftp connection\n
         '''
-        count_of_files = os.listdir("./images/")
-        thread_count_files = self.max_del(count_of_files)
-        count_of_threads = count_of_files / thread_count_files
-        for i in range(count_of_threads):
+        count_of_files = len(os.listdir("./images/"))
+        threads_count = self.max_del(count_of_files)
+        images_per_thread = int(count_of_files / threads_count)
+        for i in range(threads_count):
             new_ftp = self.check_ftp_connection()[0]
             new_thread = Thread(target=self.images_upload,
-                                args=(new_ftp, thread_count_files * i, thread_count_files * (i + 1)))
+                                args=(new_ftp, images_per_thread * i, images_per_thread * (i + 1)))
             new_thread.start()
             new_ftp.close()
 
