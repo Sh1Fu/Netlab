@@ -39,8 +39,11 @@ class UpdatePrice:
         category_ids = list()
         index = 0
         tmp_index = 0
-        while (cat['catalogResponse']['data']["category"][index]["id"] != id):
-            index += 1
+        try:
+            while (cat['catalogResponse']['data']["category"][index]["id"] != id):
+                index += 1
+        except IndexError as e:
+            print(f"{str(e)} at index {index}")
         current_dict = cat['catalogResponse']['data']["category"][index]
         category_ids.append(current_dict["id"])
         while (current_dict["parentId"] != "0" and int(current_dict["id"]) >= 30):
@@ -60,7 +63,6 @@ class UpdatePrice:
             for count in price_count_json['main']:
                 if(count['id'] == current_dict['id']):
                     return (category_ids, float(count["count"]))
-        print("Not Found")
         return (category_ids, 1)
 
     def product_take(self, PRICE_TYPE: int, json_data: dict, active_sheet: Any, id: str) -> None:
