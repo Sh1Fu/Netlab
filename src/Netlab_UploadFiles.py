@@ -3,6 +3,7 @@ import ftplib
 import logging
 from time import strftime
 from typing import Any
+from threading import Thread
 
 
 class TransferError(Exception):
@@ -50,6 +51,29 @@ class ISPUpload:
             logging.exception(msg="(HTTP 400-499) Error on FTP server")
         return(None, 0)
 
+    def max_del(self, max_iteration: int) -> int:
+        mxDel = 0
+        for i in range(max_iteration, 1, -1):
+            if max_iteration % i == 0 and i >= mxDel and (max_iteration / i > 5 and max_iteration / i < 8):
+                mxDel = i
+                return mxDel
+
+    def thread_upload(self) -> None:
+        '''
+        Take a new ftp_connection and upload ``count`` files via new thread\n
+        ``count`` - count of uploading files\n
+        ``ftp_conn`` - new ftp connection\n
+        '''
+        count_of_files = os.listdir("./images/")
+        thread_count_files = self.max_del(count_of_files)
+        count_of_threads = count_of_files / thread_count_files
+        for i in range(count_of_threads):
+            new_ftp = self.check_ftp_connection()[0]
+            new_thread = Thread(target=self.images_upload,
+                                args=(new_ftp, thread_count_files * i, thread_count_files * (i + 1)))
+            new_thread.start()
+            new_ftp.close()
+
     def upload_price(self, file_name: str, with_images: bool) -> None:
         '''
         Upload function. Try to upload our new price or image file.\n
@@ -71,27 +95,29 @@ class ISPUpload:
                     if with_images:
                         logging.log(
                             msg=f"Info: Upload images to ftp server", level=logging.INFO)
-                        self.images_upload(ftp_conn=self.ftp_info[0])
+                        # self.images_upload(ftp_conn=self.ftp_info[0])
+                        self.thread_upload()
                     self.ftp_info[0].close()
                 else:
                     raise TransferError(file_name=file_name)
         except ftplib.error_reply:
             logging.exception(msg="Unexpected reply from server")
 
-    def images_upload(self, ftp_conn: Any) -> None:
+    def images_upload(self, ftp_conn: Any, start_index: int, end_index: int) -> None:
         '''
         Images upload function. Create ``images`` dir if its not exists\n
         ``ftp_conn`` - our current FTP connection
         '''
+        files = os.listdir("./images/")
         if "images" not in ftp_conn.nlst():
             ftp_conn.mkd("./images/")
         ftp_conn.cwd("./images/")
-        for image_name in os.listdir("./images/"):
-            image_file = open(f"./images/{image_name}", 'rb')
+        for index in range(start_index, end_index, 1):
+            image_file = open(f"./images/{files[index]}", 'rb')
             try:
-                ftp_conn.storbinary(f"STOR {image_name}", image_file)
-                if image_name not in ftp_conn.nlst():
-                    logging.exception(msg=TransferError(image_name))
+                ftp_conn.storbinary(f"STOR {files[index]}", image_file)
+                if files[index] not in ftp_conn.nlst():
+                    logging.exception(msg=TransferError(files[index]))
             except ftplib.all_errors as e:
                 logging.exception(f"FTPError: {str(e)}")
             image_file.close()
