@@ -107,9 +107,10 @@ class ISPUpload:
         ``ftp_conn`` - our current FTP connection
         '''
         files = os.listdir("./images/")
+        ftp_conn.cwd(f"./www/{self.shop_addr}/upload/")
         if "images" not in ftp_conn.nlst():
             ftp_conn.mkd("./images/")
-        ftp_conn.cwd(f"./www/{self.shop_addr}/upload/images/")
+        ftp_conn.cwd(f"./images/")
         for index in range(start_index, end_index, 1):
             image_file = open(f"./images/{files[index]}", 'rb')
             try:
