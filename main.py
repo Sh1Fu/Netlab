@@ -68,7 +68,7 @@ class Main(App):
 
     def clean(self) -> None:
         '''
-        Remove all files from price_lists dir if you want
+        Remove all files from price_lists and images dir if you want
         '''
         remove(f"./price_lists/{self.PRICE_NAME}.xlsx") if exists(
             f"./price_lists/{self.PRICE_NAME}.xlsx") else None
@@ -76,6 +76,7 @@ class Main(App):
             f"./price_lists/{self.IMAGES_PRICE}") else None
         remove("./price_lists/price_update_tmp.csv") if exists(
             "./price_lists/price_update_tmp.csv") else None
+        shutil.rmtree("./images/")
 
 
 def main():
@@ -96,10 +97,9 @@ def main():
     choice = res.main_choice()
     if choice['price'] == "Only default price":
         res.price_update(PRICE_TYPE, 0)
-        # res.isp_upload(0)
+        res.isp_upload(0)
     elif choice['price'] == "Default price with images":
         res.price_with_images(PRICE_TYPE)
-        shutil.rmtree("./images/")
     elif choice['price'] == "Only configuration price":
         PRICE_TYPE = 1
         res.price_update(PRICE_TYPE, 0)
