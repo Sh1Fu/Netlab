@@ -72,11 +72,11 @@ class DownloadImage:
         return True if (work_start <= datetime.now(self.LOCAL_TIMEZONE) <= work_end) else False
 
     def max_del(self, max_iteration: int) -> int:
-        mxDel = 0
+        max_del = 0
         for i in range(max_iteration, 1, -1):
-            if max_iteration % i == 0 and i >= mxDel and max_iteration / i > 5:
-                mxDel = i
-                return mxDel
+            if max_iteration % i == 0 and i >= max_del and max_iteration / i > 5:
+                max_del = i
+                return max_del
 
     def scrap_proxy(self) -> list:
         '''
@@ -162,10 +162,10 @@ class DownloadImage:
         active_sh = wb.active
         sheet_length = active_sh.max_row
         current_column = active_sh.max_column + 1
-        mxDel = self.max_del(sheet_length)
+        mx_del = self.max_del(sheet_length)
         active_sh.cell(row=1, column=current_column).value = "Картинка"
         for i in tqdm(range(2, sheet_length + 1, 1)):
-            if i % mxDel == 0:
+            if i % mx_del == 0:
                 proxy_index = randint(0, len(self.PROXY_LIST) - 1)
                 current_proxy = self.PROXY_LIST[proxy_index]
                 proxy_dict = {"http": current_proxy}
@@ -206,6 +206,6 @@ class DownloadImage:
         Create zip with images to NetLab
         '''
         a = listdir("./images")
-        mxDel = self.max_del(len(a))
-        self.sort_files(mxDel, a)
+        mx_del = self.max_del(len(a))
+        self.sort_files(mx_del, a)
         make_archive("images.zip", 'zip', './images/')

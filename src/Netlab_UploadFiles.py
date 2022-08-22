@@ -52,11 +52,11 @@ class ISPUpload:
         return(None, 0)
 
     def max_del(self, max_iteration: int) -> int:
-        mxDel = 1
-        for i in range(max_iteration, 1, -1):
-            if max_iteration % i == 0 and i >= mxDel and max_iteration / i < 8:
-                mxDel = i
-                return mxDel
+        max_del = 1
+        for i in range(1, max_iteration, 1):
+            if max_iteration % i == 0 and i >= max_del and i < 8:
+                max_del = i
+                return max_del
 
     def thread_upload(self) -> None:
         '''
@@ -72,7 +72,6 @@ class ISPUpload:
             new_thread = Thread(target=self.images_upload,
                                 args=(new_ftp, images_per_thread * i, images_per_thread * (i + 1)))
             new_thread.start()
-            new_ftp.close()
 
     def upload_price(self, file_name: str, with_images: bool) -> None:
         '''
@@ -87,7 +86,6 @@ class ISPUpload:
                     self.ftp_info[0].delete(file_name)
                     msg = f"Info: old {file_name} has been successfully deleted"
                     logging.log(msg=msg, level=logging.INFO)
-                    print
                 price = open(f"./price_lists/{file_name}", "rb")
                 self.ftp_info[0].storbinary(f"STOR {file_name}", price)
                 price.close()
@@ -97,7 +95,7 @@ class ISPUpload:
                             msg=f"Info: Upload images to ftp server", level=logging.INFO)
                         # self.images_upload(ftp_conn=self.ftp_info[0])
                         self.thread_upload()
-                    self.ftp_info[0].close()
+                    self.ftp_info[0].quit()
                 else:
                     raise TransferError(file_name=file_name)
         except ftplib.error_reply:
