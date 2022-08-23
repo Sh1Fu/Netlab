@@ -48,6 +48,7 @@ class Main(App):
         Price and image function
         '''
         if exists("./price_lists/price_update_tmp.csv") and exists("./images/"):
+            im.make_archive('images/', 'price_lists/images.zip')
             self.isp_upload(1)
             return None
         if not exists("./price_lists/first.xlsx"):
