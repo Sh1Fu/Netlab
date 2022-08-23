@@ -56,6 +56,7 @@ class Main(App):
         im.xlsx_work()
         TakePrice(self.AUTH_URL, self.PRICE_NAME, self.creds).csv_save(
             f"./price_lists/{self.IMAGES_PRICE}")
+        im.images_zip()
         self.isp_upload(1)
 
     def isp_upload(self, is_image: bool) -> None:

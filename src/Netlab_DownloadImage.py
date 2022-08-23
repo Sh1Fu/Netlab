@@ -208,4 +208,4 @@ class DownloadImage:
         # a = listdir("./images")
         # mx_del = self.max_del(len(a))
         # self.sort_files(mx_del, a)
-        make_archive("images.zip", 'zip', './images/')
+        make_archive("./price_lists/images.zip", 'zip', './images/')
