@@ -94,7 +94,10 @@ class ISPUpload:
                         logging.log(
                             msg=f"Info: Upload images to ftp server", level=logging.INFO)
                         # self.images_upload(ftp_conn=self.ftp_info[0])
-                        self.thread_upload()
+                        # self.thread_upload()
+                        zip_file = open("./price_lists/images.zip", "rb")
+                        self.ftp_info[0].storbinary(f"STOR images.zip", zip_file)
+                        zip_file.close()
                     self.ftp_info[0].quit()
                 else:
                     raise TransferError(file_name=file_name)

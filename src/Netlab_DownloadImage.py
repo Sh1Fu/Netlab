@@ -205,7 +205,7 @@ class DownloadImage:
         '''
         Create zip with images to NetLab
         '''
-        a = listdir("./images")
-        mx_del = self.max_del(len(a))
-        self.sort_files(mx_del, a)
-        make_archive("images.zip", 'zip', './images/')
+        # a = listdir("./images")
+        # mx_del = self.max_del(len(a))
+        # self.sort_files(mx_del, a)
+        make_archive("./price_lists/images.zip", 'zip', './images/')
