@@ -72,12 +72,7 @@ class Main(App):
         '''
         Remove all files from price_lists and images dir if you want
         '''
-        remove(f"./price_lists/{self.PRICE_NAME}.xlsx") if exists(
-            f"./price_lists/{self.PRICE_NAME}.xlsx") else None
-        remove(f"./price_lists/{self.IMAGES_PRICE}") if exists(
-            f"./price_lists/{self.IMAGES_PRICE}") else None
-        remove("./price_lists/price_update_tmp.csv") if exists(
-            "./price_lists/price_update_tmp.csv") else None
+        shutil.rmtree("./price_lists/")
         shutil.rmtree("./images/")
 
 

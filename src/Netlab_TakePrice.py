@@ -89,7 +89,6 @@ class TakePrice(UpdatePrice):
                         PRICE_TYPE, products['categoryResponse']['data']['goods'], active_sheet, subcatalog["id"])
                 except BaseException as e:
                     logging.log(msg=f'Error: {str(e)}', level=logging.ERROR)
-                    # wb.save(f"./price_lists/{self.file_name}")
             else:
                 continue
             sleep(0.2)

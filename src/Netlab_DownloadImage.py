@@ -25,7 +25,6 @@ class DownloadImage:
         self.LOG_FILE = "./out/%s.log" % strftime("%Y%m%d-%H%M")
         self.LOCAL_TIMEZONE = timezone("Europe/Moscow")
         self.AUTH_URL = "http://services.netlab.ru/rest/authentication/token.json?"
-        # self.PROXY_LIST = self.scrap_proxy() + [None] * 100
         self.PROXY_LIST = [None] * 100
         self.file_name = file_name
         self.msg = ""
@@ -205,7 +204,5 @@ class DownloadImage:
         '''
         Create zip with images to NetLab
         '''
-        # a = listdir("./images")
-        # mx_del = self.max_del(len(a))
-        # self.sort_files(mx_del, a)
         make_archive("./price_lists/images", 'zip', "./images/")
+        print("[+] Zip file is created..")
