@@ -92,7 +92,7 @@ class UpdatePrice:
         catalog_dict = dict()
         catalog_dict = self.update_list(catalog_dict)
         for i in range(0, data_len):
-            if json_data[i]['properties']["удаленный склад"] is not None:
+            if json_data[i]['properties']["удаленный склад"] is not None and json_data[i]['properties']['цена по категории F'] != 0:
                 if PRICE_TYPE == 1:
                     for index, ids in enumerate(p_cat, 1):
                         active_sheet.cell(row=active_sheet_row, column=index).value = self.find_name(
