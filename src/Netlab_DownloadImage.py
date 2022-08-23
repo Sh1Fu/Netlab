@@ -1,8 +1,8 @@
 import logging
 from datetime import datetime
 from json import JSONDecodeError, loads
-from os import listdir, makedirs
-from os.path import exists
+from os.path import exists, basename, dirname
+from os import makedirs, sep
 from random import randint
 from shutil import make_archive, move
 from ssl import SSLError
@@ -201,11 +201,15 @@ class DownloadImage:
             make_archive(f"images-{i}.zip", 'zip', f'./images/images-{i}/')
             a = a[delit:]
 
-    def images_zip(self) -> None:
+    def make_archive(self, source: str, destination: str):
         '''
-        Create zip with images to NetLab
+        Make archive of ``source`` folder and create a new archive in ``destionation``
         '''
-        # a = listdir("./images")
-        # mx_del = self.max_del(len(a))
-        # self.sort_files(mx_del, a)
-        make_archive("./price_lists/images", 'zip', root_dir='./images')
+        base = basename(destination)
+        name = base.split('.')[0]
+        format = base.split('.')[1]
+        archive_from = dirname(source)
+        archive_to = basename(source.strip(sep))
+        # print(source, destination, archive_from, archive_to)
+        make_archive(name, format, archive_from, archive_to)
+        move('%s.%s' % (name, format), destination)
