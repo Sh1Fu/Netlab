@@ -49,13 +49,13 @@ class Main(App):
         '''
         im = DownloadImage(self.PRICE_NAME, creds=self.creds)
         if exists("./price_lists/price_update_tmp.csv") and exists("./images/"):
-            im.make_archive('images/', 'price_lists/images.zip')
+            im.images_zip()
             self.isp_upload(1)
             return None
         if not exists("./price_lists/first.xlsx"):
             self.price_update(PRICE_TYPE, 1)
         im.xlsx_work()
-        im.make_archive('images/', 'price_lists/images.zip')
+        im.images_zip()
         TakePrice(self.AUTH_URL, self.PRICE_NAME, self.creds).csv_save(
             f"./price_lists/{self.IMAGES_PRICE}")
         self.isp_upload(1)
