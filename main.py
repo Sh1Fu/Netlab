@@ -20,27 +20,26 @@ class Main(App):
         self.IMAGES_PRICE = "images.xlsx"
         self.AUTH_URL = "http://services.netlab.ru/rest/authentication/token.json?"
         self.creds = None
+        self.default_price = TakePrice(self.AUTH_URL, self.PRICE_NAME, self.creds)
 
-    def login(self) -> tuple:
+    def login(self) -> bool:
         '''
         Trying to login to the API using the entered data
         '''
         self.creds = self.auth()
-        session = TakePrice(self.AUTH_URL,  self.PRICE_NAME, self.creds)
         try:
-            api_token = session.auth_token(creds=self.creds)[0]
-            if api_token != "":
-                return (1, api_token)
-        except BaseException or HTTPDefaultErrorHandler or api_token == "":
-            return (0, None)
+            self.default_price.auth_token(creds=self.creds)
+            if self.default_price.token is not None:
+                return True
+        except BaseException or HTTPDefaultErrorHandler:
+            return False
 
     def price_update(self, PRICE_TYPE: int, with_images: bool) -> None:
         '''
         Only price function
         '''
-        price = TakePrice(self.AUTH_URL, self.PRICE_NAME, self.creds)
-        price.take_price(PRICE_TYPE)
-        price.csv_save(
+        self.default_price.take_price(PRICE_TYPE)
+        self.default_price.csv_save(
             f"./price_lists/{self.PRICE_NAME}") if with_images == 0 else None
 
     def price_with_images(self, PRICE_TYPE: int) -> None:
@@ -56,7 +55,7 @@ class Main(App):
             self.price_update(PRICE_TYPE, 1)
         im.xlsx_work()
         im.images_zip()
-        TakePrice(self.AUTH_URL, self.PRICE_NAME, self.creds).csv_save(
+        self.default_price.csv_save(
             f"./price_lists/{self.IMAGES_PRICE}")
         self.isp_upload(1)
 
@@ -83,7 +82,7 @@ def main():
     res = Main()
     auth = res.login()
     continue_input = "y"
-    while(auth[0] != 1):
+    while(auth is False):
         continue_input = input(
             "[!] AuthError: Check your API credentials.\nContinue? Type [y]/n: ")
         if continue_input == 'n':

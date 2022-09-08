@@ -5,7 +5,6 @@ from threading import Thread
 from time import strftime
 from typing import Any
 
-
 class TransferError(Exception):
     '''
     Specific Error class to logging into file. Checks if my file is uploaded to server
@@ -21,11 +20,11 @@ class TransferError(Exception):
 class ISPUpload:
     def __init__(self) -> None:
         self.LOG_FILE = "./out/%s.log" % strftime("%Y%m%d-%H%M")
-        self.ip = os.environ["FTP_IP"]
-        self.port = os.environ["FTP_PORT"] if os.environ["FTP_PORT"] else "21"
-        self.username = os.environ["FTP_USERNAME"]
-        self.password = os.environ["FTP_PASSWORD"]
-        self.shop_addr = os.environ["SHOP_ADDR"]
+        self.IP = os.environ["FTP_IP"]
+        self.PORT = os.environ["FTP_PORT"] if os.environ["FTP_PORT"] else "21"
+        self.USERNAME = os.environ["FTP_USERNAME"]
+        self.PASSWORD = os.environ["FTP_PASSWORD"]
+        self.SHOP_ADDR = os.environ["SHOP_ADDR"]
         logging.basicConfig(filename=self.LOG_FILE, level=logging.DEBUG,
                             format='%(asctime)s.%(msecs)03d %(levelname)s %(module)s - %(funcName)s: %(message)s', datefmt='%Y-%m-%d %H:%M:%S')
         logging.debug("[+] Start FTP Connection..\n")
@@ -37,10 +36,10 @@ class ISPUpload:
         Return value - tuple with next variables: ``New FTP Connection variable`` and ``Status Code(0 or 1)``\n
         If ``Status Code`` - 0 then ``New FTP Connections`` - None
         '''
-        ftp_session = ftplib.FTP(host=self.ip)
+        ftp_session = ftplib.FTP(host=self.IP)
         try:
             ftp_session.connect()
-            ftp_session.login(user=self.username, passwd=self.password)
+            ftp_session.login(user=self.USERNAME, passwd=self.PASSWORD)
             ftp_session.voidcmd("NOOP")
             return (ftp_session, 1)
         except IOError as e:
@@ -73,7 +72,7 @@ class ISPUpload:
                                 args=(new_ftp, images_per_thread * i, images_per_thread * (i + 1)))
             new_thread.start()
 
-    def upload_price(self, file_name: str, with_images: bool) -> None:
+    def upload_price(self, file_name: str) -> None:
         '''
         Upload function. Try to upload our new price or image file.\n
         ``file_name`` - name of our file\n
@@ -81,7 +80,7 @@ class ISPUpload:
         '''
         try:
             if self.ftp_info[1] == 1:
-                self.ftp_info[0].cwd(f"./www/{self.shop_addr}/upload/")
+                self.ftp_info[0].cwd(f"./www/{self.SHOP_ADDR}/upload/")
                 if file_name in self.ftp_info[0].nlst():
                     self.ftp_info[0].delete(file_name)
                     msg = f"Info: old {file_name} has been successfully deleted"

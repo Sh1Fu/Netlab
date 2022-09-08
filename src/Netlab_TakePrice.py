@@ -25,16 +25,15 @@ class TakePrice(UpdatePrice):
         self.creds = creds
         self.token = None
         super().__init__(file_name=self.file_name)
-        if not exists("./price_lists/"):
-            makedirs("./price_lists/")
-        if not exists("./out/"):
-            print("[+] Make out dir to script logs..")
-            makedirs("./out/")
+        makedirs("./out/") if not exists("./out/") else None
         logging.basicConfig(filename=self.LOG_FILE, level=logging.INFO,
                             format='%(asctime)s.%(msecs)03d %(levelname)s %(module)s - %(funcName)s: %(message)s', datefmt='%Y-%m-%d %H:%M:%S')
-        logging.info("Check requests\n")
+        logging.info("[+] Starting price update process..\n")
+        if not exists("./price_lists/"):
+            makedirs("./price_lists/")
+            logging.info("[+] Make out result dir with updated price files..")
 
-    def auth_token(self, creds: Any) -> tuple:
+    def auth_token(self, creds: Any) -> None:
         '''
         API function. Take token from Netlab API\n
         ``creds`` - actual json credential data\n
@@ -44,8 +43,7 @@ class TakePrice(UpdatePrice):
         '''
         req = get(self.auth_url, creds)
         data_json = self.prepare_json(req.text)
-        token, live_time = data_json["tokenResponse"]["data"]["token"], data_json["tokenResponse"]["data"]["expiredIn"]
-        return (token, live_time)
+        self.token, live_time = data_json["tokenResponse"]["data"]["token"], data_json["tokenResponse"]["data"]["expiredIn"]
 
     def prepare_json(self, data: str) -> Any:
         '''
@@ -70,7 +68,7 @@ class TakePrice(UpdatePrice):
         '''
         API function. Take all products from category.
         '''
-        self.token = self.auth_token(creds=self.creds)[0]
+        self.auth_token(creds=self.creds) if self.token is None else None
         catalog_json = self.catalog_names(self.token)
         with open("catalog.json", "w+") as catalog_file:
             dump(catalog_json, catalog_file)
