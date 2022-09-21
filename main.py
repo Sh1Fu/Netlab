@@ -1,5 +1,5 @@
 from __future__ import print_function
-
+import sys
 import shutil
 from os import remove
 from os.path import exists
@@ -75,10 +75,41 @@ class Main(App):
         shutil.rmtree("./images/")
 
 
+class CMDInput(Main):
+    def __init__(self) -> None:
+        super().__init__()
+
+    def check_cmd_input(self) -> bool:
+        return True if len(sys.argv) > 1 else False
+
+    def help_info(self) -> None:
+        print("Netlab price update script")
+        print("Usage:")
+        print("-u <username> => set username from Netlab API")
+        print("-p <password> => set password to Netlab user")
+        print(
+            "-m {1,2,3} => set current working mode (1 - Only default price, 2 - Only configuration price, 3 - Price with images")
+        print("Example: python3 crontab_task.py -u shifu -p pass -m 1")
+        
+    @check_cmd_input
+    def parse_arguments(self) -> None:
+        commands = {"-u": [0, ""], "-p": [0, ""], "-m": [0, ""]}
+        for command in commands.keys():
+            if command in sys.argv:
+                if sys.argv[sys.argv.index(command) + 1] is not None and sys.argv[sys.argv.index(command) + 1] not in commands:
+                    commands[command][0] = 1
+                    commands[command][1] = sys.argv[sys.argv.index(
+                        command) + 1]
+        for value in commands.values():
+            if(value[0] == 0):
+                self.help_info()
+                return
+    
+
 def main():
     PRICE_TYPE = 0
     Hello = Figlet(font='slant')
-    print(Hello.renderText('Netlab price update'))
+    print(Hello.renderText('Netlab'))
     res = Main()
     auth = res.login()
     continue_input = "y"

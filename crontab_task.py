@@ -1,8 +1,9 @@
-import subprocess
+import textwrap
 import sys
 from typing import Any
 import keyboard
 from time import sleep
+from src.Netlab_Helpers import feed_app_with_input, keys, create_example_fixture
 # Prov arguments
 # python3 crontab_task.py -u <username> -p <password> -m {1,2,3}
 #          argv[0]     argv[1] argv[2] argv[3] argv[4] argv[5] argv[6]
@@ -10,7 +11,36 @@ from time import sleep
 
 class CronTab:
     def __init__(self) -> None:
-        pass
+        self.choices = ['Only default price', 'Only configuration price', 'Default price with images', 'Delete all previous price files']
+        self.message = '= Select Function ='
+        
+
+    def test_select_first_choice(self):
+        message = self.message
+        kwargs = {
+            'choices': self.choices
+        }
+        text = keys.ENTER
+    
+        result = feed_app_with_input('list', message, text, **kwargs)
+
+    def test_select_second_choice(self):
+        message = self.message
+        kwargs = {
+            'choices': self.choices
+        }
+        text = keys.DOWN + keys.ENTER
+
+        result = feed_app_with_input('list', message, text, **kwargs)
+
+    def test_select_third_choice(self):
+        message = self.message
+        kwargs = {
+            'choices': self.choices
+        }
+        text = keys.DOWN + keys.DOWN + keys.ENTER
+
+        result = feed_app_with_input('list', message, text, **kwargs)
 
     def help_info(self) -> None:
         print("Netlab price update script")
@@ -37,12 +67,26 @@ class CronTab:
             username=commands["-u"][1], password=commands["-p"][1], mode=commands["-m"][1])
 
     def run_netlab(self, username: str, password: str, mode: str) -> None:
-        process = subprocess.Popen(["python3", "main.py"])
-        sleep(20)
-        process.communicate(input=("%s\n%s\n" % (username, password)).encode())
-        for count in range(int(mode) - 1):
-            keyboard.send("page down")
-        keyboard.send("enter")
+        #process = subprocess.Popen(["python3", "main.py"])
+        #sleep(20)
+        #process.communicate(input=("%s\n%s\n" % (username, password)).encode())
+        #for count in range(int(mode) - 1):
+        #    keyboard.send("page down")
+        #keyboard.send("enter")
+        example_app = create_example_fixture('main.py')
+        example_app.expect(textwrap.dedent("""? Enter your Netlab login:"""))
+        example_app.writeline(username)
+        example_app.expect(textwrap.dedent("""? Enter your Netlab password:"""))
+        example_app.writeline(password)
+        if mode == 1:
+            self.test_select_first_choice()
+        if mode == 2:
+            self.test_select_second_choice()
+        else:
+            self.test_select_third_choice()
+
+
+
 
 
 def main():
