@@ -1,7 +1,7 @@
 import logging
 from datetime import datetime
 from json import JSONDecodeError, loads
-from os import listdir, makedirs
+from os import makedirs
 from os.path import exists
 from random import randint
 from shutil import make_archive, move

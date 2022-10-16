@@ -1,6 +1,7 @@
 import logging
 from csv import writer
 from json import dump, loads
+from multiprocessing.sharedctypes import Value
 from os import makedirs
 from os.path import exists
 from time import sleep, strftime
@@ -15,20 +16,19 @@ from src.Netlab_UpdatePrice import UpdatePrice
 
 
 class TakePrice(UpdatePrice):
-    def __init__(self, auth_url: str, file_name: str, creds: Any) -> None:
+    def __init__(self, auth_url: str, file_name: str) -> None:
         self.LOG_FILE = "./out/%s.log" % strftime("%Y%m%d-%H%M")
         self.CSV_NAME = "price_update_tmp.csv"
         self.auth_url = auth_url
         self.file_name = file_name
         self.diction = dict()
         self.current_row = 1
-        self.creds = creds
         self.token = None
         super().__init__(file_name=self.file_name)
         makedirs("./out/") if not exists("./out/") else None
         logging.basicConfig(filename=self.LOG_FILE, level=logging.INFO,
                             format='%(asctime)s.%(msecs)03d %(levelname)s %(module)s - %(funcName)s: %(message)s', datefmt='%Y-%m-%d %H:%M:%S')
-        logging.info("[+] Starting price update process..\n")
+        logging.info("[+] Starting price update process..")
         if not exists("./price_lists/"):
             makedirs("./price_lists/")
             logging.info("[+] Make out result dir with updated price files..")
@@ -43,7 +43,8 @@ class TakePrice(UpdatePrice):
         '''
         req = get(self.auth_url, creds)
         data_json = self.prepare_json(req.text)
-        self.token, live_time = data_json["tokenResponse"]["data"]["token"], data_json["tokenResponse"]["data"]["expiredIn"]
+        self.token, live_time = data_json["tokenResponse"]["data"][
+            "token"], data_json["tokenResponse"]["data"]["expiredIn"]
 
     def prepare_json(self, data: str) -> Any:
         '''
@@ -68,7 +69,6 @@ class TakePrice(UpdatePrice):
         '''
         API function. Take all products from category.
         '''
-        self.auth_token(creds=self.creds) if self.token is None else None
         catalog_json = self.catalog_names(self.token)
         with open("catalog.json", "w+") as catalog_file:
             dump(catalog_json, catalog_file)
@@ -77,8 +77,10 @@ class TakePrice(UpdatePrice):
         active_sheet = wb.active
         self.init_default_xlsx(active_sheet=active_sheet) if PRICE_TYPE == 0 else self.init_main_xlsx(
             active_sheet=active_sheet)
-        print(catalog_json["catalogResponse"]["data"]["category"])
-        catalog_json["catalogResponse"]["data"]["category"].pop(catalog_json["catalogResponse"]["data"]["category"].index("Услуги и Получи!Фонд"))
+        try:
+            catalog_json["catalogResponse"]["data"]["category"].index("Услуги и Получи!Фонд")
+        except ValueError:
+            logging.info("'Услуги и Получи!Фонд' category not in catalog")
         for subcatalog in tqdm(catalog_json["catalogResponse"]["data"]["category"]):
             products = get(
                 "http://services.netlab.ru/rest/catalogsZip/Прайс-лист/%s.json?oauth_token=%s" % (subcatalog["id"], self.token))
