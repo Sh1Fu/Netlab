@@ -112,9 +112,9 @@ class UpdatePrice:
                 if self.cmo != 1:
                     active_sheet.cell(row=active_sheet_row, column=ind).value = round(
                         json_data[i]['properties']['цена по категории F'] * self.usd_value * (1 + p_count), 2)
-                else:
+                else: # Condition of CMO company
                     active_sheet.cell(row=active_sheet_row, column=ind).value = round(
-                        json_data[i]['properties']['РРЦ'] * (1 + p_count), 2)
+                        json_data[i]['properties']['РРЦ'], 2)
                 ind += 1
                 active_sheet.cell(row=active_sheet_row,
                                   column=ind).value = "RUB"

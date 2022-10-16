@@ -72,7 +72,7 @@ class ISPUpload:
                                 args=(new_ftp, images_per_thread * i, images_per_thread * (i + 1)))
             new_thread.start()
 
-    def upload_price(self, file_name: str) -> None:
+    def upload_price(self, file_name: str, with_images: bool) -> None:
         '''
         Upload function. Try to upload our new price or image file.\n
         ``file_name`` - name of our file\n

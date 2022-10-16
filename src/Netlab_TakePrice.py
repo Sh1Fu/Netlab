@@ -77,16 +77,17 @@ class TakePrice(UpdatePrice):
         active_sheet = wb.active
         self.init_default_xlsx(active_sheet=active_sheet) if PRICE_TYPE == 0 else self.init_main_xlsx(
             active_sheet=active_sheet)
+        print(catalog_json["catalogResponse"]["data"]["category"])
+        catalog_json["catalogResponse"]["data"]["category"].pop(catalog_json["catalogResponse"]["data"]["category"].index("Услуги и Получи!Фонд"))
         for subcatalog in tqdm(catalog_json["catalogResponse"]["data"]["category"]):
-            if subcatalog["name"] != "Услуги и Получи!Фонд":
-                products = get(
-                    "http://services.netlab.ru/rest/catalogsZip/Прайс-лист/%s.json?oauth_token=%s" % (subcatalog["id"], self.token))
-                products = self.prepare_json(products.text)
-                try:
-                    self.product_take(
-                        PRICE_TYPE, products['categoryResponse']['data']['goods'], active_sheet, subcatalog["id"])
-                except BaseException as e:
-                    logging.log(msg=f'Error: {str(e)}', level=logging.ERROR)
+            products = get(
+                "http://services.netlab.ru/rest/catalogsZip/Прайс-лист/%s.json?oauth_token=%s" % (subcatalog["id"], self.token))
+            products = self.prepare_json(products.text)
+            try:
+                self.product_take(
+                    PRICE_TYPE, products['categoryResponse']['data']['goods'], active_sheet, subcatalog["id"])
+            except BaseException as e:
+                logging.log(msg=f'Error: {str(e)}', level=logging.ERROR)
             else:
                 continue
             sleep(0.2)
