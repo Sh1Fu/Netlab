@@ -8,6 +8,7 @@ class UpdatePrice:
     def __init__(self, file_name) -> None:
         self.file_name = file_name
         self.usd_value = self.usd()
+        self.cmo = 0
 
     def usd(self) -> float:
         '''
@@ -55,6 +56,8 @@ class UpdatePrice:
                 print(tmp_index, index, current_dict,
                       cat['catalogResponse']['data']["category"][tmp_index])
                 break
+            if current_dict['name'].find("ЦМО") != -1:
+                self.cmo = 1
             index = tmp_index
             current_dict = cat['catalogResponse']['data']["category"][index]
             category_ids.append(current_dict["id"])
@@ -85,6 +88,7 @@ class UpdatePrice:
         '''
         data_len = len(json_data)
         active_sheet_row = active_sheet.max_row + 1
+        self.cmo = 0
         p_info = self.find_count(id, self.diction)
         p_count, p_cat = p_info[1], p_info[0]
         p_cat.reverse()
@@ -92,7 +96,7 @@ class UpdatePrice:
         catalog_dict = dict()
         catalog_dict = self.update_list(catalog_dict)
         for i in range(0, data_len):
-            if json_data[i]['properties']["удаленный склад"] is not None:
+            if json_data[i]['properties']["удаленный склад"] is not None and json_data[i]['properties']['цена по категории F'] != 0:
                 if PRICE_TYPE == 1:
                     for index, ids in enumerate(p_cat, 1):
                         active_sheet.cell(row=active_sheet_row, column=index).value = self.find_name(
@@ -105,8 +109,12 @@ class UpdatePrice:
                 active_sheet.cell(
                     row=active_sheet_row, column=ind).value = json_data[i]['properties']['название']
                 ind += 1
-                active_sheet.cell(row=active_sheet_row, column=ind).value = round(
-                    json_data[i]['properties']['цена по категории F'] * self.usd_value * (1 + p_count), 2)
+                if self.cmo != 1:
+                    active_sheet.cell(row=active_sheet_row, column=ind).value = round(
+                        json_data[i]['properties']['цена по категории F'] * self.usd_value * (1 + p_count), 2)
+                else: # Condition of CMO company
+                    active_sheet.cell(row=active_sheet_row, column=ind).value = round(
+                        json_data[i]['properties']['РРЦ'], 2)
                 ind += 1
                 active_sheet.cell(row=active_sheet_row,
                                   column=ind).value = "RUB"

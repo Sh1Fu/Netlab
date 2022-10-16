@@ -1,8 +1,10 @@
 from __future__ import print_function
 
+from argparse import ArgumentParser
 import shutil
-from os import remove
+import sys
 from os.path import exists
+from typing import Any
 from urllib.request import HTTPDefaultErrorHandler
 
 from pyfiglet import Figlet
@@ -13,6 +15,12 @@ from src.Netlab_TakePrice import TakePrice
 from src.Netlab_UploadFiles import ISPUpload
 
 
+def check_cmd_input(function_name) -> None:
+    def wrapper(self):
+        function_name(self) if len(sys.argv) > 1 else None
+    return wrapper
+
+
 class Main(App):
     def __init__(self) -> None:
         super().__init__()
@@ -20,45 +28,103 @@ class Main(App):
         self.IMAGES_PRICE = "images.xlsx"
         self.AUTH_URL = "http://services.netlab.ru/rest/authentication/token.json?"
         self.creds = None
+        self.mode = 0
+        self.default_price = TakePrice(
+            self.AUTH_URL, self.PRICE_NAME)
+        self.function_def = {
+            1: 'price_update',
+            2: 'price_update',
+            3: 'price_with_images'
+        }
+        self.prog_args = ArgumentParser()
 
-    def login(self) -> tuple:
+    def login(self) -> bool:
         '''
         Trying to login to the API using the entered data
         '''
-        self.creds = self.auth()
-        session = TakePrice(self.AUTH_URL,  self.PRICE_NAME, self.creds)
+        if self.creds is None:
+            self.creds = self.auth()
         try:
-            api_token = session.auth_token(creds=self.creds)[0]
-            if api_token != "":
-                return (1, api_token)
-        except BaseException or HTTPDefaultErrorHandler or api_token == "":
-            return (0, None)
+            self.default_price.auth_token(creds=self.creds)
+            if self.default_price.token is not None:
+                return True
+        except BaseException or HTTPDefaultErrorHandler:
+            return False
+
+    @check_cmd_input
+    def parse_aruments(self) -> None:
+        '''
+        Work with command line arguments if we need to set up new cron task
+        '''
+        self.prog_args.add_argument(
+            '-u', '-username', help='<username> => set username from Netlab API', type=str)
+        self.prog_args.add_argument(
+            '-p', '-password', help='<password> => set password to Netlab user', type=str)
+        self.prog_args.add_argument(
+            '-m', help='mode => set current working mode (1 - Only default price, 2 - Only configuration price, 3 - Price with images)', type=int, choices=[1, 2, 3])
+
+    def configure_settings(self) -> None:
+        '''
+        Update ``self.creds`` dictionary with credentials form cmd args\n
+        Init working mode ``self.mode``
+        '''
+        self.parse_aruments()
+        args = self.prog_args.parse_args()
+        self.mode = args.m
+        self.creds = {'username': args.u, 'password': args.p}
+
+    def call(self) -> None:
+        '''
+        We call the function we need depending on the selected mode of operation.\n
+        The choice goes through the -m option in the command line arguments
+        '''
+        func = getattr(locals()["self"], self.function_def[self.mode])
+        if self.mode != 2:
+            if self.mode != 3:
+                func(0, 0)
+            else:
+                func(0, 1)
+        else:
+            func(1, 0)
+
+    def choice(self) -> None:
+        choice = self.main_choice()
+        if choice['price'] == "Only configuration price":
+            self.price_update(1, 0)
+        if choice['price'] == "Default price with images":
+            self.price_with_images(0, 1)
+        if choice['price'] == "Delete all previous price files":
+            self.clean()
+        if choice['price'] == "Only default price":
+            self.price_update(0, 0)
+            self.isp_upload(0)
 
     def price_update(self, PRICE_TYPE: int, with_images: bool) -> None:
         '''
-        Only price function
+        Only price function\n
+        Update price list from Netlab service and save it as csv file with specific options
         '''
-        price = TakePrice(self.AUTH_URL, self.PRICE_NAME, self.creds)
-        price.take_price(PRICE_TYPE)
-        price.csv_save(
+        self.default_price.take_price(PRICE_TYPE)
+        self.default_price.csv_save(
             f"./price_lists/{self.PRICE_NAME}") if with_images == 0 else None
 
-    def price_with_images(self, PRICE_TYPE: int) -> None:
+    def price_with_images(self, PRICE_TYPE: int, with_images: bool) -> None:
         '''
-        Price and image function
+        Price and image function\n
+        Update price list and then download all required images. After all, files are sent via FTP to the server
         '''
         im = DownloadImage(self.PRICE_NAME, creds=self.creds)
         if exists("./price_lists/price_update_tmp.csv") and exists("./images/"):
             im.images_zip()
-            self.isp_upload(1)
+            self.isp_upload(with_images)
             return None
         if not exists("./price_lists/first.xlsx"):
-            self.price_update(PRICE_TYPE, 1)
+            self.price_update(PRICE_TYPE, with_images)
         im.xlsx_work()
         im.images_zip()
-        TakePrice(self.AUTH_URL, self.PRICE_NAME, self.creds).csv_save(
+        self.default_price.csv_save(
             f"./price_lists/{self.IMAGES_PRICE}")
-        self.isp_upload(1)
+        self.isp_upload(with_images)
 
     def isp_upload(self, is_image: bool) -> None:
         '''
@@ -77,31 +143,26 @@ class Main(App):
 
 
 def main():
-    PRICE_TYPE = 0
-    Hello = Figlet(font='slant')
-    print(Hello.renderText('Netlab price update'))
-    res = Main()
-    auth = res.login()
-    continue_input = "y"
-    while(auth[0] != 1):
-        continue_input = input(
+    print(Figlet(font='slant').renderText('Netlab'))
+    CONTINUE_INPUT = "y"
+    result_object = Main()
+    check_args = True if len(sys.argv) > 1 else False
+    if check_args:
+        result_object.configure_settings()
+    auth_try = result_object.login()
+    while(not auth_try):
+        CONTINUE_INPUT = input(
             "[!] AuthError: Check your API credentials.\nContinue? Type [y]/n: ")
-        if continue_input == 'n':
+        if CONTINUE_INPUT == 'n':
             print("[!] Ok, Have a nice day :<\n")
             exit()
         else:
-            auth = res.login()
-    choice = res.main_choice()
-    if choice['price'] == "Only default price":
-        res.price_update(PRICE_TYPE, 0)
-        res.isp_upload(0)
-    elif choice['price'] == "Default price with images":
-        res.price_with_images(PRICE_TYPE)
-    elif choice['price'] == "Only configuration price":
-        PRICE_TYPE = 1
-        res.price_update(PRICE_TYPE, 0)
-    elif choice['price'] == "Delete all previous price files":
-        res.clean()
+            result_object.creds = None
+            auth_try = result_object.login()
+    if check_args:
+        result_object.call()
+    else:
+        result_object.choice()
 
 
 if __name__ == "__main__":

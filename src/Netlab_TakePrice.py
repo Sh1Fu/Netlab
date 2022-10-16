@@ -1,6 +1,7 @@
 import logging
 from csv import writer
 from json import dump, loads
+from multiprocessing.sharedctypes import Value
 from os import makedirs
 from os.path import exists
 from time import sleep, strftime
@@ -15,26 +16,24 @@ from src.Netlab_UpdatePrice import UpdatePrice
 
 
 class TakePrice(UpdatePrice):
-    def __init__(self, auth_url: str, file_name: str, creds: Any) -> None:
+    def __init__(self, auth_url: str, file_name: str) -> None:
         self.LOG_FILE = "./out/%s.log" % strftime("%Y%m%d-%H%M")
         self.CSV_NAME = "price_update_tmp.csv"
         self.auth_url = auth_url
         self.file_name = file_name
         self.diction = dict()
         self.current_row = 1
-        self.creds = creds
         self.token = None
         super().__init__(file_name=self.file_name)
-        if not exists("./price_lists/"):
-            makedirs("./price_lists/")
-        if not exists("./out/"):
-            print("[+] Make out dir to script logs..")
-            makedirs("./out/")
+        makedirs("./out/") if not exists("./out/") else None
         logging.basicConfig(filename=self.LOG_FILE, level=logging.INFO,
                             format='%(asctime)s.%(msecs)03d %(levelname)s %(module)s - %(funcName)s: %(message)s', datefmt='%Y-%m-%d %H:%M:%S')
-        logging.info("Check requests\n")
+        logging.info("[+] Starting price update process..")
+        if not exists("./price_lists/"):
+            makedirs("./price_lists/")
+            logging.info("[+] Make out result dir with updated price files..")
 
-    def auth_token(self, creds: Any) -> tuple:
+    def auth_token(self, creds: Any) -> None:
         '''
         API function. Take token from Netlab API\n
         ``creds`` - actual json credential data\n
@@ -44,8 +43,8 @@ class TakePrice(UpdatePrice):
         '''
         req = get(self.auth_url, creds)
         data_json = self.prepare_json(req.text)
-        token, live_time = data_json["tokenResponse"]["data"]["token"], data_json["tokenResponse"]["data"]["expiredIn"]
-        return (token, live_time)
+        self.token, live_time = data_json["tokenResponse"]["data"][
+            "token"], data_json["tokenResponse"]["data"]["expiredIn"]
 
     def prepare_json(self, data: str) -> Any:
         '''
@@ -70,7 +69,6 @@ class TakePrice(UpdatePrice):
         '''
         API function. Take all products from category.
         '''
-        self.token = self.auth_token(creds=self.creds)[0]
         catalog_json = self.catalog_names(self.token)
         with open("catalog.json", "w+") as catalog_file:
             dump(catalog_json, catalog_file)
@@ -79,16 +77,19 @@ class TakePrice(UpdatePrice):
         active_sheet = wb.active
         self.init_default_xlsx(active_sheet=active_sheet) if PRICE_TYPE == 0 else self.init_main_xlsx(
             active_sheet=active_sheet)
+        try:
+            catalog_json["catalogResponse"]["data"]["category"].index("Услуги и Получи!Фонд")
+        except ValueError:
+            logging.info("'Услуги и Получи!Фонд' category not in catalog")
         for subcatalog in tqdm(catalog_json["catalogResponse"]["data"]["category"]):
-            if subcatalog["name"] != "Услуги и Получи!Фонд":
-                products = get(
-                    "http://services.netlab.ru/rest/catalogsZip/Прайс-лист/%s.json?oauth_token=%s" % (subcatalog["id"], self.token))
-                products = self.prepare_json(products.text)
-                try:
-                    self.product_take(
-                        PRICE_TYPE, products['categoryResponse']['data']['goods'], active_sheet, subcatalog["id"])
-                except BaseException as e:
-                    logging.log(msg=f'Error: {str(e)}', level=logging.ERROR)
+            products = get(
+                "http://services.netlab.ru/rest/catalogsZip/Прайс-лист/%s.json?oauth_token=%s" % (subcatalog["id"], self.token))
+            products = self.prepare_json(products.text)
+            try:
+                self.product_take(
+                    PRICE_TYPE, products['categoryResponse']['data']['goods'], active_sheet, subcatalog["id"])
+            except BaseException as e:
+                logging.log(msg=f'Error: {str(e)}', level=logging.ERROR)
             else:
                 continue
             sleep(0.2)
