@@ -71,7 +71,7 @@ class UpdatePrice:
     def product_take(self, PRICE_TYPE: int, json_data: dict, active_sheet: Any, id: str) -> None:
         '''
         Main function. Create and modify xlsx price file.\n
-        ``PRICE_TYPE`` - configuration number. Indicates what type of directory will be generated
+        ``PRICE_TYPE`` - configuration number. Indicates what type of directory will be generated\n
         ``id`` - product id\n
         ``active_sheet`` - current openpyxl thread\n
         ``json_data`` - all goods from Netlab subcatalog\n

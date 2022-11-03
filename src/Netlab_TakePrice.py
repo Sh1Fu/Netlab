@@ -1,8 +1,7 @@
 import logging
 from csv import writer
 from json import dump, loads
-from multiprocessing.sharedctypes import Value
-from os import makedirs
+from os import makedirs, remove
 from os.path import exists
 from time import sleep, strftime
 from typing import Any
@@ -43,8 +42,7 @@ class TakePrice(UpdatePrice):
         '''
         req = get(self.auth_url, creds)
         data_json = self.prepare_json(req.text)
-        self.token, live_time = data_json["tokenResponse"]["data"][
-            "token"], data_json["tokenResponse"]["data"]["expiredIn"]
+        self.token= data_json["tokenResponse"]["data"]["token"]
 
     def prepare_json(self, data: str) -> Any:
         '''
@@ -89,12 +87,13 @@ class TakePrice(UpdatePrice):
                 self.product_take(
                     PRICE_TYPE, products['categoryResponse']['data']['goods'], active_sheet, subcatalog["id"])
             except BaseException as e:
-                logging.log(msg=f'Error: {str(e)}', level=logging.ERROR)
+                logging.error(f'Error: {str(e)}')
             else:
                 continue
             sleep(0.2)
         wb.save(f"./price_lists/{self.file_name}")
         print("[+] Default price without images in result dir!")
+        remove('catalog.json')
 
     def csv_save(self, file_name: str) -> None:
         '''
@@ -110,4 +109,4 @@ class TakePrice(UpdatePrice):
             csv_writer = writer(result_file, delimiter=";", quotechar='"')
             for row in active_sh.iter_rows():
                 csv_writer.writerow([cell.value for cell in row])
-        print("[+] Price list with images is ready!")
+        print("[+] Price list in csv format is ready!")

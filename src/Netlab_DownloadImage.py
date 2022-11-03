@@ -133,7 +133,7 @@ class DownloadImage:
             except HTTPError or SSLError:
                 self.msg = "NetworkError: Problems with proxy % on XML_ID %s" % (
                     proxy_dict['http'] if proxy_dict['http'] else "Main Network", id)
-                logging.log(msg=self.msg, level=logging.ERROR)
+                logging.error(msg=self.msg)
                 sleep(5)
                 response = get("http://services.netlab.ru/rest/catalogsZip/goodsImages/%s.json?oauth_token=%s" %
                                (id, self.token), headers=headers, proxies=None)
@@ -141,12 +141,12 @@ class DownloadImage:
                 data = loads(response.text[response.text.find("& {") + 2:])
             except JSONDecodeError:
                 self.msg = f"JSONDecodeError: Problems with response {data} on the XML_ID {id}"
-                logging.log(msg=self.msg, level=logging.ERROR)
+                logging.error(msg=self.msg)
             if data['entityListResponse']['data'] is not None:
                 return data['entityListResponse']['data']['items'][0]['properties']['Url']
         else:
             self.msg = "Working time is over, waiting for the next day to start"
-            logging.log(msg=self.msg, level=logging.INFO)
+            logging.info(msg=self.msg)
             while not self.check_time():
                 sleep(60)
         return ""
