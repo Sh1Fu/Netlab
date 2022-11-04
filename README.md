@@ -52,3 +52,11 @@ python3 main.py
   * Only configuration price
   * Default price with images
   * Delete all previous price files
+  
+## Crontab task example
+
+```bash
+0 0 * * 1,3,5 cd /home/<user>/Netlab/ &&  /home/<user>/Netlab/venv/bin/python3 main.py -u <API_NAME> -p <API_PASSWD> -m 1
+```
+
+**Note**: Check and adjust the time on the machine
