@@ -9,7 +9,7 @@ git clone https://github.com/Sh1Fu/Netlab.git
 
 Create a venv and install the necessary dependencies:
 
-```
+```bash
 python3 -m venv <venv_name>
 source <venv_name>/bin/activate
 pip3 install -r requirements.txt
@@ -27,7 +27,7 @@ Variable's names:
 
 ## Command line usage
 
-```
+```bash
 usage: main.py [-h] [-u U] [-p P] [-m {1,2,3}]
 
 options:
@@ -41,7 +41,7 @@ options:
 ## User usage
 
 Run main.py from main directory
-```
+```bash
 python3 main.py
 ```
 
