@@ -24,9 +24,10 @@ def check_cmd_input(function_name) -> None:
 class Main(App):
     def __init__(self) -> None:
         super().__init__()
+        self.AUTH_URL = "http://services.netlab.ru/rest/authentication/token.json?"
         self.PRICE_NAME = "first.xlsx"
         self.IMAGES_PRICE = "images.xlsx"
-        self.AUTH_URL = "http://services.netlab.ru/rest/authentication/token.json?"
+        self.IS_PROXY = False
         self.creds = None
         self.mode = 0
         self.default_price = TakePrice(
@@ -62,6 +63,8 @@ class Main(App):
             '-p', '-password', help='<password> => set password to Netlab user', type=str)
         self.prog_args.add_argument(
             '-m', help='mode => set current working mode (1 - Only default price, 2 - Only configuration price, 3 - Price with images)', type=int, choices=[1, 2, 3])
+        self.prog_args.add_argument(
+            '--proxy', help="Use proxy while images are finding", action='store_true')
 
     def configure_settings(self) -> None:
         '''
@@ -72,6 +75,8 @@ class Main(App):
         args = self.prog_args.parse_args()
         self.mode = args.m
         self.creds = {'username': args.u, 'password': args.p}
+        if args.proxy:
+            self.IS_PROXY = True
 
     def call(self) -> None:
         '''
@@ -120,7 +125,7 @@ class Main(App):
             return None
         if not exists("./price_lists/first.xlsx"):
             self.price_update(PRICE_TYPE, with_images)
-        im.xlsx_work()
+        im.xlsx_work(self.IS_PROXY)
         im.images_zip()
         self.default_price.csv_save(
             f"./price_lists/{self.IMAGES_PRICE}")
