@@ -3,12 +3,9 @@ from datetime import datetime
 from json import JSONDecodeError, loads
 from os import makedirs
 from os.path import exists
-from random import randint
 from shutil import make_archive, move
-from ssl import SSLError
 from time import sleep, strftime, strptime
 from typing import Any
-from urllib import request
 from urllib.error import HTTPError, URLError
 from urllib.request import urlretrieve
 
@@ -16,7 +13,8 @@ from bs4 import BeautifulSoup
 from fake_useragent import UserAgent
 from openpyxl import load_workbook
 from pytz import timezone
-from requests import get, post
+from requests import get
+from requests.exceptions import RequestException
 from tqdm import tqdm
 
 
@@ -25,7 +23,7 @@ class DownloadImage:
         self.LOG_FILE = "./out/%s.log" % strftime("%Y%m%d-%H%M")
         self.LOCAL_TIMEZONE = timezone("Europe/Moscow")
         self.AUTH_URL = "http://services.netlab.ru/rest/authentication/token.json?"
-        self.PROXY_LIST = [None] * 100
+        self.PROXY = None
         self.file_name = file_name
         self.msg = ""
         self.creds = creds
@@ -70,14 +68,7 @@ class DownloadImage:
         work_end = now.replace(hour=23, minute=59, second=59, microsecond=0)
         return True if (work_start <= datetime.now(self.LOCAL_TIMEZONE) <= work_end) else False
 
-    def max_del(self, max_iteration: int) -> int:
-        max_del = 0
-        for i in range(max_iteration, 1, -1):
-            if max_iteration % i == 0 and i >= max_del and max_iteration / i > 5:
-                max_del = i
-                return max_del
-
-    def scrap_proxy(self) -> list:
+    def scrap_proxy(self) -> str or None:
         '''
         Take all free proxy servers from free proxy list
         Resources:\n
@@ -86,7 +77,7 @@ class DownloadImage:
 
         Check if response to http proxy has status code 200 and append it to clean_proxy list
         '''
-        proxy_list, clean_proxy = list(), list()
+        proxy_list = list()
         response = get('https://free-proxy-list.net/')
         proxy_table = BeautifulSoup(response.text, 'html.parser').find('table')
         proxy_html_raw = proxy_table.find_all("tr")
@@ -95,24 +86,17 @@ class DownloadImage:
             if len(td_tag) == 8:
                 proxy_list.append(td_tag[0].get_text() + ":" + td_tag[1].get_text()) if proxy_row.find_all(
                     class_="hx")[0].get_text() == "no" and len(proxy_list) < 100 else None
-        urls = ", ".join('"http://' + proxy + '"' for proxy in proxy_list)
-        payload = "{\
-                    \"urls\":[%s],\"userAgent\":\"chrome-100\",\
-                    \"userName\":\"\",\"passWord\":\"\",\
-                    \"headerName\":\"\",\"headerValue\":\"\",\
-                    \"strictSSL\":true,\"canonicalDomain\":false,\"\
-                    additionalSubdomains\":[\"www\"],\"followRedirect\":false,\
-                    \"throttleRequests\":100,\"escapeCharacters\":false\
-                    }" % urls
-        test_proxies = post(
-            "https://backend.httpstatus.io/api", json=loads(payload))
-        test_data = test_proxies.json()
-        for index, bad_proxy in enumerate(test_data, 0):
-            if bad_proxy["statusCode"] == 200:
-                clean_proxy.append(proxy_list[index])
-        return clean_proxy
+        for bad_proxy in proxy_list:
+            try:
+                get("http://services.netlab.ru/rest/authentication/token.json",
+                    proxies={'http': f'http://{bad_proxy}'}, timeout=1)
+                return bad_proxy
+            except RequestException:
+                logging.warning(f"{bad_proxy} is not connected to Netlab")
+                continue
+        return None
 
-    def take_image(self, id: str, proxy_dict: dict) -> str:
+    def take_image(self, id: str) -> str:
         '''
         API function. Take json with image's urls from Netlab API.
         Return value: image url or blank string
@@ -129,21 +113,21 @@ class DownloadImage:
         if self.check_time():
             try:
                 response = get("http://services.netlab.ru/rest/catalogsZip/goodsImages/%s.json?oauth_token=%s" %
-                               (id, self.token), headers=headers, proxies=proxy_dict)
-            except HTTPError or SSLError:
+                               (id, self.token), headers=headers, proxies={'http': self.PROXY})
+            except HTTPError or RequestException:
                 self.msg = "NetworkError: Problems with proxy % on XML_ID %s" % (
-                    proxy_dict['http'] if proxy_dict['http'] else "Main Network", id)
+                    self.PROXY if self.PROXY else "Main Network", id)
                 logging.error(msg=self.msg)
                 sleep(5)
                 response = get("http://services.netlab.ru/rest/catalogsZip/goodsImages/%s.json?oauth_token=%s" %
                                (id, self.token), headers=headers, proxies=None)
             try:
                 data = loads(response.text[response.text.find("& {") + 2:])
+                if data['entityListResponse']['data'] is not None:
+                    return data['entityListResponse']['data']['items'][0]['properties']['Url']
             except JSONDecodeError:
                 self.msg = f"JSONDecodeError: Problems with response {data} on the XML_ID {id}"
                 logging.error(msg=self.msg)
-            if data['entityListResponse']['data'] is not None:
-                return data['entityListResponse']['data']['items'][0]['properties']['Url']
         else:
             self.msg = "Working time is over, waiting for the next day to start"
             logging.info(msg=self.msg)
@@ -151,26 +135,24 @@ class DownloadImage:
                 sleep(60)
         return ""
 
-    def xlsx_work(self) -> None:
+    def xlsx_work(self, with_proxy: bool) -> None:
         '''
-        Main active function. Edit xlsx file. Add image's name to first unused column. Download first product's image
+        Main active function. Edit xlsx file. Add image's name to first unused column. Download first product's image\n
+        You can choose whether to work with or without a proxy.\n
+        IMPORTANT: Working with a proxy can significantly increase code time, as using a proxy is an unnecessary comparison.\n
+        Moreover, open and free proxy servers are used 
         '''
-        proxy_dict = dict()
+        self.PROXY = self.scrap_proxy() if with_proxy else None
+        print(self.PROXY)
         wb = load_workbook(
             filename=f"./price_lists/{self.file_name}", read_only=False)
         active_sh = wb.active
         sheet_length = active_sh.max_row
         current_column = active_sh.max_column + 1
-        mx_del = self.max_del(sheet_length)
         active_sh.cell(row=1, column=current_column).value = "Картинка"
         for i in tqdm(range(2, sheet_length + 1, 1)):
-            if i % mx_del == 0:
-                proxy_index = randint(0, len(self.PROXY_LIST) - 1)
-                current_proxy = self.PROXY_LIST[proxy_index]
-                proxy_dict = {"http": current_proxy}
             XML_ID = active_sh["A%d" % i].value
-            product_info = self.take_image(
-                XML_ID, proxy_dict=proxy_dict)
+            product_info = self.take_image(XML_ID)
             if product_info != "":
                 active_sh.cell(
                     row=i, column=current_column).value = str(XML_ID) + ".jpg"
@@ -178,7 +160,7 @@ class DownloadImage:
                     urlretrieve(
                         product_info, filename="./images/%s.jpg" % XML_ID)
                     sleep(0.2)
-                except URLError or HTTPError or request.exceptions.ConnectionError:
+                except URLError or HTTPError or RequestException:
                     wb.save("./price_lists/images.xlsx")
                     logging.exception(f"Network Error on the row {i}: ")
                     sleep(30)
