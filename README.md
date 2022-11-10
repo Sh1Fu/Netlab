@@ -69,3 +69,13 @@ python3 main.py
 ```
 
 **Note**: Check and adjust the time on the machine
+
+## Configuration of the count.json file:
+
+This file contains categories from the Netlab API. For each of them an additional field **count** has been entered, which shows the markup that is done for each product category. You can change it to suit your needs
+
+
+## Other:
+
+Some places in the code are subject to change. For example, if you do not want to check that the manufacturer is CMO, you can remove the corresponding block 
+Just keep in mind that this code is usually a **turnkey solution** for the customer
