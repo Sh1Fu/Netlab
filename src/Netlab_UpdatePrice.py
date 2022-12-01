@@ -1,3 +1,4 @@
+import pandas
 from json import load
 from typing import Any
 from requests import get
@@ -6,6 +7,8 @@ import xml.etree.ElementTree as ET
 
 class UpdatePrice:
     def __init__(self, file_name) -> None:
+        self.goods = {}
+        self.goods_len = 0
         self.file_name = file_name
         self.usd_value = self.usd()
         self.cmo = 0
@@ -27,6 +30,29 @@ class UpdatePrice:
         with open("catalog.json", "r", encoding="utf-8") as f:
             cat = load(f)
         return cat
+
+    def pandas_config(self, product_data: dict, category: str) -> None:
+        '''
+        Take another product and add him in to dict of dicts.\n 
+        This is for pandas array format\n
+        ``product_data`` - json of current product\n
+        ``category`` - name of current category\n
+        ''' 
+        if product_data['properties']['PN'] is not None:
+            pandas_product = {
+                "Категория": category,
+                "Наименование": product_data['properties']['название'],
+                "Производитель": product_data['properties']['производитель'] if product_data['properties']['производитель'] != "No name" else "Netlab",
+                "Заводской номер": product_data['properties']['PN'],
+                "Цена Netlab": product_data['properties']['цена по категории F'] * self.usd_value
+            }
+            self.goods[self.goods_len] = pandas_product
+            self.goods_len += 1
+    
+    def format_pandas(self) -> Any:
+        tmp_pandas = pandas.DataFrame.from_dict(self.goods, "index")
+        tmp_pandas.reset_index(drop=True, inplace=True)
+        return tmp_pandas
 
     def find_count(self, id: str, cat: dict) -> tuple:
         '''
@@ -68,7 +94,7 @@ class UpdatePrice:
                     return (category_ids, float(count["count"]))
         return (category_ids, 1)
 
-    def product_take(self, PRICE_TYPE: int, json_data: dict, active_sheet: Any, id: str) -> None:
+    def product_take(self, PRICE_TYPE: int, json_data: dict, active_sheet: Any, id: str, mode: int) -> None:
         '''
         Main function. Create and modify xlsx price file.\n
         ``PRICE_TYPE`` - configuration number. Indicates what type of directory will be generated\n
@@ -120,6 +146,7 @@ class UpdatePrice:
                                   column=ind).value = "RUB"
                 active_sheet_row += 1
                 ind = 1
+                self.pandas_config(json_data[i], self.find_name(catalog_dict['catalogResponse']['data']['category'], p_cat[0])) if mode == 4 else None
             else:
                 continue
 

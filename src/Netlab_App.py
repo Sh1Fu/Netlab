@@ -43,6 +43,9 @@ class App:
 
                 },
                 {
+                    'name': 'Default price and Pandas frame'
+                },
+                {
                     'name': 'Delete all previous price files',
                 }
             ],

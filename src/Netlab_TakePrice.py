@@ -63,7 +63,7 @@ class TakePrice(UpdatePrice):
     def find_name(self, json_object: list, id: str) -> str:
         return [obj for obj in json_object if obj['id'] == id][0]['name']
 
-    def take_price(self, PRICE_TYPE: int) -> None:
+    def take_price(self, PRICE_TYPE: int, mode: int) -> None:
         '''
         API function. Take all products from category.
         '''
@@ -85,7 +85,7 @@ class TakePrice(UpdatePrice):
             products = self.prepare_json(products.text)
             try:
                 self.product_take(
-                    PRICE_TYPE, products['categoryResponse']['data']['goods'], active_sheet, subcatalog["id"])
+                    PRICE_TYPE, products['categoryResponse']['data']['goods'], active_sheet, subcatalog["id"], mode)
             except BaseException as e:
                 logging.error(f'Error: {str(e)}')
             else:
