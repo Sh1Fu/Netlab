@@ -79,3 +79,13 @@ This file contains categories from the Netlab API. For each of them an additiona
 
 Some places in the code are subject to change. For example, if you do not want to check that the manufacturer is CMO, you can remove the corresponding block 
 Just keep in mind that this code is usually a **turnkey solution** for the customer
+
+### Pandas
+
+If you want to take Pandas DataFrame object run script like this:
+
+```bash
+python3 main.py -u <username> -p <password> -m 4
+```
+
+**price_update** will return DataFrame object

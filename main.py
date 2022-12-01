@@ -6,7 +6,6 @@ import sys
 from os.path import exists
 from typing import Any
 from urllib.request import HTTPDefaultErrorHandler
-from tabulate import tabulate
 from pyfiglet import Figlet
 
 from src.Netlab_App import App
