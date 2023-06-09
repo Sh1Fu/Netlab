@@ -1,3 +1,5 @@
+[![Pylint](https://github.com/Sh1Fu/Netlab/actions/workflows/pylint.yml/badge.svg)](https://github.com/Sh1Fu/Netlab/actions/workflows/pylint.yml)
+
 # Netlab
 A simple python script for working with Netlab API
 
